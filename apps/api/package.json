@@ -13,9 +13,9 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --max-warnings=0",
     "test": "vitest run",
     "typecheck": "tsc --noEmit --incremental false",
-    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
-    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
-    "prisma:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "clean": "rm -rf dist"
   },
   "dependencies": {
