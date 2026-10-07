@@ -23,30 +23,36 @@ jobs:
           WORK_DIR: ${{ secrets.WORK_DIR }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes "$SSH_USER@$SSH_HOST" "
-            set -e
-            cd \"$WORK_DIR\"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o BatchMode=yes "$SSH_USER@$SSH_HOST" "
+            set -ex
 
-            # Garante sincronia limpa com a main sem travar com conflitos locais
+            echo '==> [1/5] Entrando no diretório da aplicação:'
+            cd \"$WORK_DIR\"
+            pwd
+
+            echo '==> [2/5] Sincronizando código com origin/main:'
             git fetch origin main
             git reset --hard origin/main
 
-            # Validação de segurança
+            echo '==> [3/5] Validando existência do arquivo .env:'
             if [ ! -f .env ]; then
               echo '❌ ERRO: Arquivo .env não encontrado em $WORK_DIR.'
               exit 1
             fi
+            echo '✅ Arquivo .env verificado com sucesso.'
 
-            # Build e orquestração Docker
+            echo '==> [4/5] Construindo e subindo containers com Docker Compose:'
             docker compose up --build -d
 
-            # Migrations do Prisma
+            echo '==> [5/5] Executando migrations do Prisma no container:'
             docker compose exec -T api pnpm --filter @tailored-cv/api prisma:migrate:deploy
 
-            # Limpeza de imagens órfãs
+            echo '==> Limpeza de imagens antigas do Docker:'
             docker image prune -f
+
+            echo '🚀 Deploy concluído com sucesso!'
           "
