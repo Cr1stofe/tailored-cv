@@ -18,46 +18,31 @@ jobs:
       - name: Deploy to VPS
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           WORK_DIR: ${{ secrets.WORK_DIR }}
         run: |
           mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-          # Grava a chave privada garantindo quebras de linha corretas
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          PORT="${SSH_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          # Registra o host nos known_hosts sem falhar se demorar
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-
-          # Conexão SSH com verbose (-v) para diagnóstico claro de autenticação
-          ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$SSH_USER@$SSH_HOST" "
-            set -ex
-
-            echo '==> [1/5] Entrando no diretório da aplicação:'
+          ssh -p "$PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
+            set -e
             cd \"$WORK_DIR\"
-            pwd
 
-            echo '==> [2/5] Sincronizando código com origin/main:'
             git fetch origin main
             git reset --hard origin/main
 
-            echo '==> [3/5] Validando existência do arquivo .env:'
             if [ ! -f .env ]; then
               echo '❌ ERRO: Arquivo .env não encontrado em $WORK_DIR.'
               exit 1
             fi
-            echo '✅ Arquivo .env verificado com sucesso.'
 
-            echo '==> [4/5] Construindo e subindo containers com Docker Compose:'
             docker compose up --build -d
-
-            echo '==> [5/5] Executando migrations do Prisma no container:'
             docker compose exec -T api pnpm --filter @tailored-cv/api prisma:migrate:deploy
-
-            echo '==> Limpeza de imagens antigas do Docker:'
             docker image prune -f
-
-            echo '🚀 Deploy concluído com sucesso!'
           "
