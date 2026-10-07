@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SystemHealth {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_health")
+}
+
+enum SkillCategory {
+  PROFESSIONAL
+  HANDS_ON
+  FAMILIAR
+}
+
+enum ApplicationStatus {
+  DRAFT
+  ANALYZED
+  TAILORED
+  APPLIED
+  INTERVIEWING
+  REJECTED
+  OFFER
+}
+
+model Profile {
+  id           String   @id @default(uuid())
+  fullName     String   @map("full_name")
+  email        String   @unique
+  phone        String?
+  location     String?
+  linkedinUrl  String?  @map("linkedin_url")
+  githubUrl    String?  @map("github_url")
+  portfolioUrl String?  @map("portfolio_url")
+  summary      String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  skills         Skill[]
+  experiences    Experience[]
+  projects       Project[]
+  educations     Education[]
+  certifications Certification[]
+  applications   JobApplication[]
+
+  @@map("profiles")
+}
+
+model Skill {
+  id        String        @id @default(uuid())
+  profileId String        @map("profile_id")
+  name      String
+  category  SkillCategory @default(PROFESSIONAL)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, category])
+  @@map("skills")
+}
+
+model Experience {
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  company      String
+  position     String
+  location     String?
+  startDate    String   @map("start_date")
+  endDate      String?  @map("end_date")
+  isCurrent    Boolean  @default(false) @map("is_current")
+  highlights   String[]
+  technologies String[]
+  orderIndex   Int      @default(0) @map("order_index")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("experiences")
+}
+
+model Project {
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  name         String
+  description  String   @db.Text
+  url          String?
+  highlights   String[]
+  technologies String[]
+  orderIndex   Int      @default(0) @map("order_index")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("projects")
+}
+
+model Education {
+  id           String   @id @default(uuid())
+  profileId    String   @map("profile_id")
+  institution  String
+  degree       String
+  fieldOfStudy String?  @map("field_of_study")
+  startDate    String?  @map("start_date")
+  endDate      String?  @map("end_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("educations")
+}
+
+model Certification {
+  id        String   @id @default(uuid())
+  profileId String   @map("profile_id")
+  name      String
+  issuer    String
+  issueDate String?  @map("issue_date")
+  url       String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("certifications")
+}
+
+model JobApplication {
+  id             String            @id @default(uuid())
+  profileId      String            @map("profile_id")
+  company        String
+  position       String
+  location       String?
+  url            String?
+  jobDescription String            @map("job_description") @db.Text
+  status         ApplicationStatus @default(DRAFT)
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  profile         Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobAnalysis     JobAnalysis?
+  tailoredResumes TailoredResume[]
+
+  @@index([profileId])
+  @@map("job_applications")
+}
+
+model JobAnalysis {
+  id                       String   @id @default(uuid())
+  applicationId            String   @unique @map("application_id")
+  summary                  String   @db.Text
+  seniorityLevel           String?  @map("seniority_level")
+  requiredSkills           String[] @map("required_skills")
+  desiredSkills            String[] @map("desired_skills")
+  keyResponsibilities      String[] @map("key_responsibilities")
+  keywords                 String[]
+  matchScore               Int      @default(0) @map("match_score")
+  matchingSkills           String[] @map("matching_skills")
+  missingSkills            String[] @map("missing_skills")
+  strategicRecommendations String[] @map("strategic_recommendations")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("job_analyses")
+}
+
+model TailoredResume {
+  id                  String   @id @default(uuid())
+  applicationId       String   @map("application_id")
+  version             Int      @default(1)
+  title               String
+  targetedHeadline    String?  @map("targeted_headline")
+  reframedSummary     String   @map("reframed_summary") @db.Text
+  highlightedSkills   String[] @map("highlighted_skills")
+  tailoredExperiences Json     @map("tailored_experiences")
+  tailoredProjects    Json?    @map("tailored_projects")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("tailored_resumes")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  name      String    @db.VarChar(255)
+  username  String    @unique @db.VarChar(50)
+  created   DateTime  @default(now()) @db.Timestamp(0)
+  sessions  Session[]
+
+  @@map("users")
+}
+
+model Session {
+  sidHash   Bytes     @id @map("sid_hash") @db.ByteA
+  userId    Int       @map("user_id")
+  created   DateTime  @default(now()) @db.Timestamp(0)
+  expires   DateTime  @db.Timestamp(0)
+  ip        String    @db.VarChar(45)
+  ua        String    @db.VarChar(255)
+  revoked   Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}

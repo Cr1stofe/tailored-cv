@@ -1,0 +1,220 @@
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  @include glassmorphism;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  background: rgba(10, 13, 20, 0.85);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.875rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  @media screen and (max-width: 768px) {
+    padding: 0.75rem 1rem;
+  }
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: $text-primary;
+
+  @media screen and (max-width: 480px) {
+    font-size: 1.05rem;
+  }
+
+  .iconWrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-md;
+    background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+    @include flex-center;
+    color: #ffffff;
+    box-shadow: 0 4px 12px $accent-glow;
+  }
+}
+
+.badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: $text-muted;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid $border-subtle;
+  padding: 0.2rem 0.6rem;
+  border-radius: $radius-full;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  @media screen and (max-width: 860px) {
+    display: none;
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  @media screen and (max-width: 768px) {
+    gap: 0.35rem;
+  }
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $text-secondary;
+  border-radius: $radius-sm;
+  transition: all 0.15s ease;
+
+  @media screen and (max-width: 768px) {
+    padding: 0.5rem 0.65rem;
+  }
+
+  @media screen and (max-width: 540px) {
+    padding: 0.5rem;
+
+    .navText {
+      display: none;
+    }
+  }
+
+  &:hover {
+    color: $text-primary;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  &.active {
+    color: $accent-primary;
+    background: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.newButton {
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px $accent-glow;
+  white-space: nowrap;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+
+  @media screen and (max-width: 768px) {
+    margin-left: 0.25rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  @media screen and (max-width: 540px) {
+    padding: 0.5rem;
+
+    .newButtonText {
+      display: none;
+    }
+  }
+
+  &:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+}
+
+.loginButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px $accent-glow;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+  }
+}
+
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(148, 163, 184, 0.2);
+
+  @media screen and (max-width: 640px) {
+    margin-left: 0.25rem;
+    padding-left: 0.5rem;
+  }
+}
+
+.logoutButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: $radius-sm;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+
+  @media screen and (max-width: 640px) {
+    padding: 0.45rem;
+
+    .logoutText {
+      display: none;
+    }
+  }
+}
+
+@media print {
+  .header {
+    display: none !important;
+  }
+}

@@ -1,0 +1,952 @@
+@use "../../styles/variables" as *;
+@use "../../styles/mixins" as *;
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+
+  @media screen and (max-width: 768px) {
+    padding: 1.5rem 1rem;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  @media screen and (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: $text-primary;
+  letter-spacing: -0.02em;
+
+  @media screen and (max-width: 768px) {
+    font-size: 1.6rem;
+  }
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: $text-secondary;
+  margin-top: 0.25rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+
+  @media screen and (max-width: 640px) {
+    width: 100%;
+    flex-direction: column;
+  }
+}
+
+.saveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+  color: #ffffff;
+  padding: 0.625rem 1.25rem;
+  border-radius: $radius-sm;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px $accent-glow;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+
+  @media screen and (max-width: 640px) {
+    width: 100%;
+  }
+
+  &:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid $border-subtle;
+  color: $text-secondary;
+  padding: 0.625rem 1rem;
+  border-radius: $radius-sm;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  @media screen and (max-width: 640px) {
+    width: 100%;
+  }
+
+  &:hover {
+    color: $text-primary;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.masterResumeCard {
+  @include glassmorphism;
+  border-radius: $radius-lg;
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(59, 130, 246, 0.15),
+      transparent 65%
+    ),
+    rgba(15, 23, 42, 0.75);
+
+  @media screen and (max-width: 860px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+}
+
+.masterResumeInfo {
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: $radius-full;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.45rem;
+  }
+
+  h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+    letter-spacing: -0.015em;
+  }
+
+  p {
+    font-size: 0.885rem;
+    color: #94a3b8;
+    margin-top: 0.35rem;
+    line-height: 1.5;
+    max-width: 580px;
+  }
+}
+
+.masterResumeActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  @media screen and (max-width: 860px) {
+    width: 100%;
+  }
+
+  @media screen and (max-width: 640px) {
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .viewResumeButton,
+  .downloadResumeButton,
+  .syncResumeButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
+    border-radius: $radius-sm;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+
+    @media screen and (max-width: 640px) {
+      width: 100%;
+      min-height: 44px;
+      white-space: normal;
+    }
+  }
+
+  .viewResumeButton {
+    background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 14px $accent-glow;
+
+    &:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+  }
+
+  .downloadResumeButton {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #f1f5f9;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+
+  .syncResumeButton {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #cbd5e1;
+
+    &:hover {
+      color: #60a5fa;
+      border-color: rgba(59, 130, 246, 0.5);
+      background: rgba(59, 130, 246, 0.08);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.card {
+  @include glassmorphism;
+  border-radius: $radius-md;
+  padding: 1.75rem;
+  margin-bottom: 1.75rem;
+
+  @media screen and (max-width: 768px) {
+    padding: 1.25rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+.cardTitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: $text-primary;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+
+  .icon {
+    color: $accent-primary;
+  }
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+
+  @media screen and (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+
+  label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  input,
+  textarea {
+    background: rgba(10, 13, 20, 0.6);
+    border: 1px solid $border-subtle;
+    border-radius: $radius-sm;
+    padding: 0.65rem 0.875rem;
+    color: $text-primary;
+    font-family: inherit;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease;
+
+    &:focus {
+      outline: none;
+      border-color: $border-focus;
+    }
+  }
+
+  textarea {
+    min-height: 120px;
+    max-height: 380px;
+    resize: vertical;
+    line-height: 1.55;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(10, 13, 20, 0.4);
+      border-radius: $radius-sm;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 9999px;
+
+      &:hover {
+        background: rgba(148, 163, 184, 0.45);
+      }
+    }
+  }
+}
+
+.skillsGroup {
+  margin-bottom: 1.5rem;
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hint {
+    font-size: 0.75rem;
+    color: $text-muted;
+    font-weight: 400;
+  }
+}
+
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid $border-subtle;
+  border-radius: $radius-full;
+  font-size: 0.8125rem;
+  color: $text-secondary;
+
+  &.professional {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: $accent-primary;
+  }
+
+  &.handsOn {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.25);
+    color: #818cf8;
+  }
+
+  &.familiar {
+    background: rgba(148, 163, 184, 0.08);
+    border-color: rgba(148, 163, 184, 0.2);
+    color: $text-muted;
+  }
+
+  button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0;
+
+    &:hover {
+      color: #ef4444;
+    }
+  }
+}
+
+.addTagRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+
+  @media screen and (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+
+  .skillInput {
+    background: rgba(10, 13, 20, 0.7);
+    border: 1px solid $border-subtle;
+    border-radius: $radius-sm;
+    padding: 0.6rem 0.85rem;
+    color: $text-primary;
+    font-size: 0.875rem;
+    flex: 1;
+    min-width: 220px;
+    transition: all 0.15s ease;
+
+    @media screen and (max-width: 640px) {
+      width: 100%;
+      min-width: 100%;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $border-focus;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+
+  .selectWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    @media screen and (max-width: 640px) {
+      width: 100%;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      right: 0.85rem;
+      pointer-events: none;
+      width: 0.45rem;
+      height: 0.45rem;
+      border-right: 2px solid $text-secondary;
+      border-bottom: 2px solid $text-secondary;
+      transform: translateY(-2px) rotate(45deg);
+      transition: transform 0.15s ease;
+    }
+
+    &:hover::after {
+      border-color: $text-primary;
+    }
+  }
+
+  .skillSelect {
+    appearance: none;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid $border-subtle;
+    border-radius: $radius-sm;
+    padding: 0.6rem 2.25rem 0.6rem 0.85rem;
+    color: $text-primary;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    @media screen and (max-width: 640px) {
+      width: 100%;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $border-focus;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+    }
+
+    option {
+      background: #0f172a;
+      color: #f8fafc;
+    }
+  }
+
+  .addSkillButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.15rem;
+    background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+    transition: all 0.15s ease;
+
+    @media screen and (max-width: 640px) {
+      width: 100%;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      opacity: 0.95;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+.cardHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .cardTitle {
+    margin-bottom: 0;
+  }
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.editSectionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+    transform: translateY(-1px);
+  }
+}
+
+.saveSectionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.cancelSectionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+  }
+}
+
+.personalViewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.viewField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  .fieldLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fieldValue {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #f1f5f9;
+  }
+
+  .fieldLink {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #60a5fa;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: #93c5fd;
+      text-decoration: underline;
+    }
+  }
+}
+
+.summaryViewBox {
+  background: rgba(10, 13, 20, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: $radius-sm;
+  padding: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+}
+
+.languageBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: $radius-full;
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  width: fit-content;
+}
+
+.addItemButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+}
+
+.editableItemCard {
+  background: rgba(10, 13, 20, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: $radius-md;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color 0.15s ease;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    border-color: rgba(148, 163, 184, 0.25);
+  }
+}
+
+.itemCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+
+  .itemIndexBadge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #60a5fa;
+    background: rgba(59, 130, 246, 0.12);
+    padding: 0.2rem 0.55rem;
+    border-radius: $radius-sm;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+  }
+
+  .deleteItemButton {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: $radius-sm;
+    transition: all 0.15s ease;
+
+    &:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 1.5rem;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: $accent-primary;
+    cursor: pointer;
+  }
+
+  span {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    font-weight: 500;
+  }
+}
+
+.bulletsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+
+  .sectionLabel {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.bulletRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  input,
+  textarea {
+    flex: 1;
+    background: rgba(10, 13, 20, 0.6);
+    border: 1px solid $border-subtle;
+    border-radius: $radius-sm;
+    padding: 0.55rem 0.75rem;
+    color: $text-primary;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: $border-focus;
+    }
+  }
+
+  .removeBulletBtn {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-sm;
+    transition: all 0.15s ease;
+
+    &:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+.addBulletBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: 1px dashed rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+  padding: 0.4rem 0.75rem;
+  border-radius: $radius-sm;
+  font-size: 0.78rem;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.emptyStateNotice {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  border: 1px dashed rgba(148, 163, 184, 0.15);
+  border-radius: $radius-md;
+}
+
+.itemCard {
+  background: rgba(10, 13, 20, 0.4);
+  border: 1px solid $border-subtle;
+  border-radius: $radius-md;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+
+  @media screen and (max-width: 640px) {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .itemTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .itemCompany {
+    font-size: 0.875rem;
+    color: $accent-primary;
+  }
+
+  .itemPeriod {
+    font-size: 0.75rem;
+    color: $text-muted;
+  }
+}
+
+.bulletList {
+  padding-left: 1.2rem;
+  margin-top: 0.5rem;
+
+  li {
+    font-size: 0.84rem;
+    color: $text-secondary;
+    margin-bottom: 0.35rem;
+    line-height: 1.45;
+  }
+}
+
+.techPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+
+  span {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: $radius-sm;
+    color: $text-muted;
+  }
+}
+
+@media print {
+  .container {
+    display: none !important;
+  }
+}

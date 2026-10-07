@@ -1,0 +1,20 @@
+FROM node:24-alpine
+
+RUN apk add --no-cache libc6-compat openssl wget
+RUN corepack enable && corepack prepare pnpm@12.9.1 --activate
+
+WORKDIR /app
+
+# Cache package manifests
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY packages ./packages
+COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma ./apps/api/prisma
+COPY apps/web/package.json ./apps/web/
+
+RUN pnpm install --frozen-lockfile
+COPY apps/api ./apps/api
+COPY apps/web ./apps/web
+RUN pnpm --filter @tailored-cv/api prisma:generate
+
+EXPOSE 3000 3001

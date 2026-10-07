@@ -1,0 +1,38 @@
+{
+  "name": "tailored-cv",
+  "private": true,
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,scss,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,scss,css,md}\"",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "prisma": "pnpm --filter @tailored-cv/api exec prisma",
+    "prisma:generate": "pnpm --filter @tailored-cv/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @tailored-cv/api prisma:migrate",
+    "prisma:seed": "pnpm --filter @tailored-cv/api exec prisma db seed",
+    "prisma:studio": "dotenv -e .env -- pnpm --filter @tailored-cv/api exec prisma studio",
+    "docker:db": "docker compose -f docker-compose.dev.yml up -d postgres",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up",
+    "docker:dev:d": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:dev:build": "docker compose -f docker-compose.dev.yml up -d --build",
+    "docker:prod": "docker compose up -d",
+    "docker:seed": "docker exec tailored-cv-api pnpm --filter @tailored-cv/api prisma db seed",
+    "docker:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.71.1"
+  }
+}

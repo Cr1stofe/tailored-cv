@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tailored-cv-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tailored_cv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-tailored_cv}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - tailored-cv-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tailored_cv} -d ${POSTGRES_DB:-tailored_cv}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: tailored-cv-api
+    restart: unless-stopped
+    command: pnpm --filter=@tailored-cv/api dev
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/data:/app/apps/api/data:ro
+      - ./packages:/app/packages
+    environment:
+      NODE_ENV: development
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tailored_cv}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-tailored_cv}
+      CORS_ORIGIN: http://localhost:3000,http://web:3000
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      PEPPER: ${PEPPER:?Defina PEPPER no .env}
+      INITIAL_USER_EMAIL: ${INITIAL_USER_EMAIL:-}
+      INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
+      INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
+      INITIAL_USER_USERNAME: ${INITIAL_USER_USERNAME:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tailored-cv-net
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: tailored-cv-web
+    restart: unless-stopped
+    command: pnpm --filter=@tailored-cv/web dev
+    volumes:
+      - ./apps/web/app:/app/apps/web/app
+      - ./apps/web/components:/app/apps/web/components
+      - ./apps/web/styles:/app/apps/web/styles
+      - ./apps/web/services:/app/apps/web/services
+      - ./apps/web/public:/app/apps/web/public
+      - ./packages:/app/packages
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      INTERNAL_API_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - tailored-cv-net
+
+networks:
+  tailored-cv-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

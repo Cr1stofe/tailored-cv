@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tailored-cv-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tailored_cv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-tailored_cv}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tailored-cv-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tailored_cv} -d ${POSTGRES_DB:-tailored_cv}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: tailored-cv-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tailored_cv}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-tailored_cv}
+      CORS_ORIGIN: http://localhost:3000,http://web:3000
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      PEPPER: ${PEPPER:?Defina PEPPER no .env}
+      INITIAL_USER_EMAIL: ${INITIAL_USER_EMAIL:-}
+      INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
+      INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
+      INITIAL_USER_USERNAME: ${INITIAL_USER_USERNAME:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/api/data:/app/apps/api/data:ro
+    networks:
+      - tailored-cv-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: tailored-cv-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      INTERNAL_API_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - tailored-cv-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  tailored-cv-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

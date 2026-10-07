@@ -1,0 +1,88 @@
+{
+  "fullName": "Alex Silva",
+  "email": "alex.silva@example.com",
+  "phone": "(11) 98765-4321",
+  "location": "São Paulo, SP",
+  "linkedinUrl": "https://www.linkedin.com/in/alex-silva-dev",
+  "githubUrl": "https://github.com/alexsilva-dev",
+  "portfolioUrl": "https://alexsilva.dev",
+  "summary": "Desenvolvedor Full Stack Sênior com sólida experiência no ecossistema TypeScript, Node.js, NestJS e React/Next.js. Especialista na construção de arquiteturas escaláveis, APIs RESTful de alta performance, microsserviços e interfaces responsivas de padrão executivo.",
+  "skills": [
+    { "name": "TypeScript", "category": "PROFESSIONAL" },
+    { "name": "JavaScript", "category": "PROFESSIONAL" },
+    { "name": "React", "category": "PROFESSIONAL" },
+    { "name": "Next.js", "category": "PROFESSIONAL" },
+    { "name": "Node.js", "category": "PROFESSIONAL" },
+    { "name": "NestJS", "category": "PROFESSIONAL" },
+    { "name": "PostgreSQL", "category": "PROFESSIONAL" },
+    { "name": "Prisma", "category": "PROFESSIONAL" },
+    { "name": "Docker", "category": "PROFESSIONAL" },
+    { "name": "Git", "category": "PROFESSIONAL" },
+    { "name": "Tailwind CSS", "category": "PROFESSIONAL" },
+    { "name": "Zustand", "category": "PROFESSIONAL" },
+    { "name": "CI/CD", "category": "HANDS_ON" },
+    { "name": "Vitest", "category": "HANDS_ON" },
+    { "name": "Linux", "category": "HANDS_ON" },
+    { "name": "Cloud Services (AWS/OCI)", "category": "FAMILIAR" }
+  ],
+  "experiences": [
+    {
+      "company": "Tech Innovations Inc.",
+      "position": "Desenvolvedor Full Stack Sênior",
+      "location": "Remoto",
+      "startDate": "2022-01",
+      "endDate": null,
+      "isCurrent": true,
+      "highlights": [
+        "Liderança técnica no desenvolvimento de plataformas web escaláveis com Next.js e NestJS.",
+        "Modelagem e otimização de bancos relacionais com PostgreSQL e Prisma ORM.",
+        "Implementação de esteiras de CI/CD automatizadas e conteinerização completa com Docker."
+      ],
+      "technologies": [
+        "Next.js",
+        "NestJS",
+        "PostgreSQL",
+        "Prisma",
+        "TypeScript",
+        "Docker"
+      ],
+      "orderIndex": 0
+    }
+  ],
+  "projects": [
+    {
+      "name": "Enterprise Management Platform",
+      "description": "Sistema integrado de gestão empresarial focado em alta disponibilidade e arquitetura modular de microsserviços.",
+      "url": "https://github.com/alexsilva-dev/enterprise-platform",
+      "highlights": [
+        "Arquitetura modular em NestJS com autenticação RBAC e sessões seguras.",
+        "Interface moderna em Next.js App Router com componentização reutilizável."
+      ],
+      "technologies": ["Next.js", "NestJS", "PostgreSQL", "Prisma", "Docker"],
+      "orderIndex": 0
+    }
+  ],
+  "educations": [
+    {
+      "institution": "Universidade Tecnológica",
+      "degree": "Bacharelado em Ciência da Computação",
+      "fieldOfStudy": "Ciência da Computação",
+      "startDate": "2018-01",
+      "endDate": "2022-12"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Português: Nativo",
+      "issuer": "Idioma Nativo",
+      "issueDate": null,
+      "url": null
+    },
+    {
+      "name": "Inglês: Avançado",
+      "issuer": "Proficiência Profissional",
+      "issueDate": null,
+      "url": null
+    }
+  ]
+}
