@@ -18,13 +18,13 @@
     "prisma:migrate": "pnpm --filter @tailored-cv/api prisma:migrate",
     "prisma:seed": "pnpm --filter @tailored-cv/api exec prisma db seed",
     "prisma:studio": "dotenv -e .env -- pnpm --filter @tailored-cv/api exec prisma studio",
-    "docker:db": "docker compose -f docker-compose.dev.yml up -d postgres",
-    "docker:dev": "docker compose -f docker-compose.dev.yml up",
-    "docker:dev:d": "docker compose -f docker-compose.dev.yml up -d",
-    "docker:dev:build": "docker compose -f docker-compose.dev.yml up -d --build",
-    "docker:prod": "docker compose up -d",
+    "docker:db": "docker compose -f compose.dev.yaml up -d postgres",
+    "docker:dev": "docker compose -f compose.dev.yaml up",
+    "docker:dev:d": "docker compose -f compose.dev.yaml up -d",
+    "docker:dev:build": "docker compose -f compose.dev.yaml up -d --build",
+    "docker:prod": "docker compose -f compose.yaml up -d",
     "docker:seed": "docker exec tailored-cv-api pnpm --filter @tailored-cv/api prisma db seed",
-    "docker:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down"
+    "docker:down": "docker compose -f compose.yaml -f compose.dev.yaml down"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

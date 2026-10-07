@@ -66,8 +66,8 @@ tailored-cv/
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
-├── docker-compose.yml           # Production stack (isolated private networks)
-├── docker-compose.dev.yml       # Development stack (binds 127.0.0.1:5432 to host)
+├── compose.yaml                 # Production stack (Caddy web_gateway + isolated default network)
+├── compose.dev.yaml             # Development stack (binds 127.0.0.1:5432 to host)
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── turbo.json
