@@ -44,67 +44,111 @@ async function main() {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.profile.deleteMany();
+    const existing = await tx.profile.findFirst();
+    let profileId: string;
 
-    await tx.profile.create({
-      data: {
-        fullName: profileData.fullName,
-        email: profileData.email,
-        phone: profileData.phone,
-        location: profileData.location,
-        linkedinUrl: profileData.linkedinUrl || null,
-        githubUrl: profileData.githubUrl || null,
-        portfolioUrl: profileData.portfolioUrl || null,
-        summary: profileData.summary,
-        skills: {
-          create: (profileData.skills || []).map((s) => ({
-            name: s.name,
-            category:
-              (s.category as SkillCategory) || SkillCategory.PROFESSIONAL,
-          })),
+    if (existing) {
+      profileId = existing.id;
+      await tx.profile.update({
+        where: { id: profileId },
+        data: {
+          fullName: profileData.fullName,
+          email: profileData.email,
+          phone: profileData.phone,
+          location: profileData.location,
+          linkedinUrl: profileData.linkedinUrl || null,
+          githubUrl: profileData.githubUrl || null,
+          portfolioUrl: profileData.portfolioUrl || null,
+          summary: profileData.summary,
         },
-        experiences: {
-          create: (profileData.experiences || []).map((e, index) => ({
-            company: e.company,
-            position: e.position,
-            location: e.location,
-            startDate: e.startDate,
-            endDate: e.endDate,
-            isCurrent: e.isCurrent ?? false,
-            technologies: e.technologies || [],
-            highlights: e.highlights || [],
-            orderIndex: e.orderIndex ?? index,
-          })),
+      });
+
+      await tx.skill.deleteMany({ where: { profileId } });
+      await tx.experience.deleteMany({ where: { profileId } });
+      await tx.project.deleteMany({ where: { profileId } });
+      await tx.education.deleteMany({ where: { profileId } });
+      await tx.certification.deleteMany({ where: { profileId } });
+    } else {
+      const created = await tx.profile.create({
+        data: {
+          fullName: profileData.fullName,
+          email: profileData.email,
+          phone: profileData.phone,
+          location: profileData.location,
+          linkedinUrl: profileData.linkedinUrl || null,
+          githubUrl: profileData.githubUrl || null,
+          portfolioUrl: profileData.portfolioUrl || null,
+          summary: profileData.summary,
         },
-        projects: {
-          create: (profileData.projects || []).map((p, index) => ({
-            name: p.name,
-            description: p.description || "",
-            url: p.url || null,
-            technologies: p.technologies || [],
-            highlights: p.highlights || [],
-            orderIndex: p.orderIndex ?? index,
-          })),
-        },
-        educations: {
-          create: (profileData.educations || []).map((ed) => ({
-            institution: ed.institution,
-            degree: ed.degree,
-            fieldOfStudy: ed.fieldOfStudy,
-            startDate: ed.startDate,
-            endDate: ed.endDate,
-          })),
-        },
-        certifications: {
-          create: (profileData.certifications || []).map((c) => ({
-            name: c.name,
-            issuer: c.issuer,
-            issueDate: c.issueDate,
-            url: c.url || null,
-          })),
-        },
-      },
-    });
+      });
+      profileId = created.id;
+    }
+
+    if (profileData.skills?.length) {
+      await tx.skill.createMany({
+        data: profileData.skills.map((s) => ({
+          profileId,
+          name: s.name,
+          category: (s.category as SkillCategory) || SkillCategory.PROFESSIONAL,
+        })),
+      });
+    }
+
+    if (profileData.experiences?.length) {
+      await tx.experience.createMany({
+        data: profileData.experiences.map((e, index) => ({
+          profileId,
+          company: e.company,
+          position: e.position,
+          location: e.location,
+          startDate: e.startDate,
+          endDate: e.endDate,
+          isCurrent: e.isCurrent ?? false,
+          technologies: e.technologies || [],
+          highlights: e.highlights || [],
+          orderIndex: e.orderIndex ?? index,
+        })),
+      });
+    }
+
+    if (profileData.projects?.length) {
+      await tx.project.createMany({
+        data: profileData.projects.map((p, index) => ({
+          profileId,
+          name: p.name,
+          description: p.description || "",
+          url: p.url || null,
+          technologies: p.technologies || [],
+          highlights: p.highlights || [],
+          orderIndex: p.orderIndex ?? index,
+        })),
+      });
+    }
+
+    if (profileData.educations?.length) {
+      await tx.education.createMany({
+        data: profileData.educations.map((ed) => ({
+          profileId,
+          institution: ed.institution,
+          degree: ed.degree,
+          fieldOfStudy: ed.fieldOfStudy,
+          startDate: ed.startDate,
+          endDate: ed.endDate,
+        })),
+      });
+    }
+
+    if (profileData.certifications?.length) {
+      await tx.certification.createMany({
+        data: profileData.certifications.map((c) => ({
+          profileId,
+          name: c.name,
+          issuer: c.issuer,
+          issueDate: c.issueDate,
+          url: c.url || null,
+        })),
+      });
+    }
 
     if (initialEmail && initialPassword && hashedPassword) {
       await tx.user.upsert({

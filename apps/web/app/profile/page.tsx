@@ -64,15 +64,38 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
-  const handleOpenMasterResume = () => {
+  const [isGeneratingEnglish, setIsGeneratingEnglish] = useState(false);
+  const [activeResumeLang, setActiveResumeLang] = useState<"PT" | "EN">("PT");
+
+  const handleOpenMasterResume = (lang: "PT" | "EN" = "PT") => {
+    setActiveResumeLang(lang);
     setIsMasterResumeOpen(true);
   };
 
-  const handlePrintMasterResume = () => {
+  const handlePrintMasterResume = (lang: "PT" | "EN" = "PT") => {
+    setActiveResumeLang(lang);
     setIsMasterResumeOpen(true);
     setTimeout(() => {
       window.print();
     }, 150);
+  };
+
+  const handleGenerateEnglish = async () => {
+    setIsGeneratingEnglish(true);
+    try {
+      const updatedProfile = await api.generateEnglishProfile();
+      setProfile(updatedProfile);
+      setOriginalProfile(JSON.parse(JSON.stringify(updatedProfile)));
+      toast.success(
+        "Currículo Master em inglês gerado com sucesso e salvo no banco!",
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Erro ao gerar versão em inglês",
+      );
+    } finally {
+      setIsGeneratingEnglish(false);
+    }
   };
 
   const handleSyncMasterResume = async () => {
@@ -498,6 +521,10 @@ export default function ProfilePage() {
           onOpen={handleOpenMasterResume}
           onPrint={handlePrintMasterResume}
           onSync={handleSyncMasterResume}
+          onGenerateEnglish={handleGenerateEnglish}
+          isGeneratingEnglish={isGeneratingEnglish}
+          hasEnglishCv={Boolean(profile.englishCv)}
+          englishCvUpdatedAt={profile.englishCvUpdatedAt}
         />
 
         <PersonalInfoCard
@@ -582,6 +609,9 @@ export default function ProfilePage() {
         isOpen={isMasterResumeOpen}
         onClose={() => setIsMasterResumeOpen(false)}
         profile={profile}
+        initialLanguage={activeResumeLang}
+        onGenerateEnglish={handleGenerateEnglish}
+        isGeneratingEnglish={isGeneratingEnglish}
       />
     </>
   );

@@ -23,4 +23,18 @@ export class ProfileController {
     await this.profileService.seedDefaultProfile();
     return this.profileService.getProfile();
   }
+
+  @Post("generate-english")
+  async generateEnglish(): Promise<MasterProfileDto> {
+    return this.profileService.generateEnglishProfile();
+  }
+
+  @Get("english")
+  async getEnglish(): Promise<{
+    englishCv: MasterProfileDto | null;
+    englishCvUpdatedAt: string | null;
+  }> {
+    return this.profileService.getEnglishProfile();
+  }
 }
+

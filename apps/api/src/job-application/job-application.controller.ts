@@ -10,7 +10,11 @@ import {
 } from "@nestjs/common";
 import { JobApplicationService } from "./job-application.service";
 import type { CreateJobApplicationInput } from "@tailored-cv/validation";
-import type { ApplicationStatus, TailoredResumeDto } from "@tailored-cv/types";
+import type {
+  ApplicationStatus,
+  TailoredResumeDto,
+  SupportedLanguage,
+} from "@tailored-cv/types";
 
 @Controller("job-applications")
 export class JobApplicationController {
@@ -50,8 +54,11 @@ export class JobApplicationController {
   }
 
   @Post(":id/tailor")
-  async tailor(@Param("id") id: string) {
-    return this.jobApplicationService.tailor(id);
+  async tailor(
+    @Param("id") id: string,
+    @Body("targetLanguage") targetLanguage?: SupportedLanguage,
+  ) {
+    return this.jobApplicationService.tailor(id, { targetLanguage });
   }
 
   @Get(":id/tailored-resume")

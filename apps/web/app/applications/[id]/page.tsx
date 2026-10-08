@@ -49,6 +49,7 @@ export default function ApplicationDetailPage({
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tailorLanguage, setTailorLanguage] = useState<"PT" | "EN">("PT");
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -77,6 +78,9 @@ export default function ApplicationDetailPage({
       ]);
       setApplication(appData);
       setProfile(profileData);
+      if (appData.targetLanguage) {
+        setTailorLanguage(appData.targetLanguage);
+      }
 
       if (appData.tailoredResumes && appData.tailoredResumes.length > 0) {
         setTailoredResume(appData.tailoredResumes[0] || null);
@@ -111,13 +115,17 @@ export default function ApplicationDetailPage({
   const handleTailor = async () => {
     setIsTailoring(true);
     try {
-      const resume = await api.tailorResume(id);
+      const resume = await api.tailorResume(id, tailorLanguage);
       setTailoredResume(resume);
       setIsEditingResume(false);
       const updated = await api.getApplicationById(id);
       setApplication(updated);
       setActiveTab("resume");
-      toast.success("Currículo adaptado com sucesso!");
+      toast.success(
+        tailorLanguage === "EN"
+          ? "Currículo adaptado em inglês com sucesso!"
+          : "Currículo adaptado em português com sucesso!",
+      );
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Falha ao adaptar currículo",
@@ -303,6 +311,8 @@ export default function ApplicationDetailPage({
         isAnalyzing={isAnalyzing}
         isTailoring={isTailoring}
         hasTailoredResume={!!tailoredResume}
+        tailorLanguage={tailorLanguage}
+        onTailorLanguageChange={setTailorLanguage}
         onSaveResume={handleSaveResume}
         onCancelEditing={cancelEditing}
         onAnalyze={handleAnalyze}

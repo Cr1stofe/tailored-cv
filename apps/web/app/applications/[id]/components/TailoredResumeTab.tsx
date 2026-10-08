@@ -74,9 +74,17 @@ export function TailoredResumeTab({
   const currentResume =
     isEditingResume && editedResume ? editedResume : tailoredResume;
 
+  const isEn = currentResume.language === "EN";
+
   return (
     <div>
       <div className={`${styles.resumePreviewCard} ats-print-container`}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }} className="no-print">
+          <span className={`${styles.langBadge} ${isEn ? styles.en : ""}`}>
+            {isEn ? "🇺🇸 Tailored in English" : "🇧🇷 Adaptado em Português"}
+          </span>
+        </div>
+
         {isEditingResume && (
           <div className={`${styles.editModeBanner} no-print`}>
             <div
@@ -88,8 +96,9 @@ export function TailoredResumeTab({
             >
               <Edit3 size={16} />
               <span>
-                Modo de Edição Manual Ativo — Ajuste headline, resumo,
-                competências e bullets antes de imprimir.
+                {isEn
+                  ? "Manual Edit Mode Active — Fine-tune your headline, summary, and bullets."
+                  : "Modo de Edição Manual Ativo — Ajuste headline, resumo, competências e bullets antes de imprimir."}
               </span>
             </div>
             <div className={styles.editModeActions}>
@@ -101,7 +110,9 @@ export function TailoredResumeTab({
               >
                 <Save size={14} />
                 <span>
-                  {isSavingResume ? "Salvando..." : "Salvar Alterações"}
+                  {isSavingResume
+                    ? isEn ? "Saving..." : "Salvando..."
+                    : isEn ? "Save Changes" : "Salvar Alterações"}
                 </span>
               </button>
               <button
@@ -110,7 +121,7 @@ export function TailoredResumeTab({
                 onClick={onCancelEditing}
               >
                 <X size={14} />
-                <span>Descartar</span>
+                <span>{isEn ? "Discard" : "Descartar"}</span>
               </button>
             </div>
           </div>
@@ -128,7 +139,7 @@ export function TailoredResumeTab({
                 placeholder="Headline do currículo..."
               />
             ) : (
-              currentResume.targetedHeadline || "Desenvolvedor de Software"
+              currentResume.targetedHeadline || (isEn ? "Software Engineer" : "Desenvolvedor de Software")
             )}
           </div>
           <div className={styles.atsContacts}>
@@ -198,7 +209,9 @@ export function TailoredResumeTab({
         </div>
 
         <section className={styles.atsSection}>
-          <h2 className={styles.atsSectionTitle}>Resumo Profissional</h2>
+          <h2 className={styles.atsSectionTitle}>
+            {isEn ? "Professional Summary" : "Resumo Profissional"}
+          </h2>
           {isEditingResume ? (
             <textarea
               className={styles.atsTextarea}
@@ -214,12 +227,18 @@ export function TailoredResumeTab({
         </section>
 
         <section className={styles.atsSection}>
-          <h2 className={styles.atsSectionTitle}>Competências Técnicas</h2>
+          <h2 className={styles.atsSectionTitle}>
+            {isEn ? "Technical Skills" : "Competências Técnicas"}
+          </h2>
           <div className={styles.atsSkillsText}>
             {isEditingResume ? (
               <div style={{ marginBottom: "0.75rem" }}>
                 <p style={{ marginBottom: "0.25rem" }}>
-                  <strong>Competências em Destaque para a Vaga:</strong>
+                  <strong>
+                    {isEn
+                      ? "Highlighted Skills for Target Position:"
+                      : "Competências em Destaque para a Vaga:"}
+                  </strong>
                 </p>
                 <div className={styles.atsSkillsEditList}>
                   {currentResume.highlightedSkills?.map((skill, sIdx) => (
@@ -244,7 +263,7 @@ export function TailoredResumeTab({
                       value={newSkillText}
                       onChange={(e) => onNewSkillTextChange(e.target.value)}
                     />
-                    <button type="submit">Adicionar</button>
+                    <button type="submit">{isEn ? "Add" : "Adicionar"}</button>
                   </form>
                 </div>
               </div>
@@ -252,7 +271,11 @@ export function TailoredResumeTab({
               currentResume.highlightedSkills &&
               currentResume.highlightedSkills.length > 0 && (
                 <p>
-                  <strong>Competências em Destaque para a Vaga:</strong>{" "}
+                  <strong>
+                    {isEn
+                      ? "Highlighted Skills for Target Position:"
+                      : "Competências em Destaque para a Vaga:"}
+                  </strong>{" "}
                   {currentResume.highlightedSkills.join(" • ")}
                 </p>
               )
@@ -280,7 +303,9 @@ export function TailoredResumeTab({
         </section>
 
         <section className={styles.atsSection}>
-          <h2 className={styles.atsSectionTitle}>Experiência Profissional</h2>
+          <h2 className={styles.atsSectionTitle}>
+            {isEn ? "Professional Experience" : "Experiência Profissional"}
+          </h2>
           {currentResume.tailoredExperiences.map((exp, idx) => (
             <div key={idx} className={styles.atsItem}>
               <div className={styles.atsItemHeader}>
@@ -310,7 +335,7 @@ export function TailoredResumeTab({
                         type="button"
                         className={styles.atsDeleteBulletBtn}
                         onClick={() => onRemoveExperienceBullet(idx, bIdx)}
-                        title="Remover bullet"
+                        title={isEn ? "Remove bullet" : "Remover bullet"}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -322,7 +347,7 @@ export function TailoredResumeTab({
                     onClick={() => onAddExperienceBullet(idx)}
                   >
                     <Plus size={13} />
-                    <span>Adicionar realização</span>
+                    <span>{isEn ? "Add bullet point" : "Adicionar realização"}</span>
                   </button>
                 </div>
               ) : (
@@ -335,7 +360,8 @@ export function TailoredResumeTab({
 
               {exp.technologies && exp.technologies.length > 0 && (
                 <div className={styles.atsTechLine}>
-                  <strong>Tecnologias:</strong> {exp.technologies.join(", ")}
+                  <strong>{isEn ? "Technologies:" : "Tecnologias:"}</strong>{" "}
+                  {exp.technologies.join(", ")}
                 </div>
               )}
             </div>
@@ -345,7 +371,9 @@ export function TailoredResumeTab({
         {currentResume.tailoredProjects &&
           currentResume.tailoredProjects.length > 0 && (
             <section className={styles.atsSection}>
-              <h2 className={styles.atsSectionTitle}>Projetos Relevantes</h2>
+              <h2 className={styles.atsSectionTitle}>
+                {isEn ? "Key Architectural Projects" : "Projetos Relevantes"}
+              </h2>
               {currentResume.tailoredProjects.map((proj, idx) => (
                 <div key={idx} className={styles.atsItem}>
                   <div className={styles.atsItemHeader}>
@@ -370,7 +398,7 @@ export function TailoredResumeTab({
                             type="button"
                             className={styles.atsDeleteBulletBtn}
                             onClick={() => onRemoveProjectBullet(idx, bIdx)}
-                            title="Remover realização"
+                            title={isEn ? "Remove bullet" : "Remover realização"}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -382,7 +410,11 @@ export function TailoredResumeTab({
                         onClick={() => onAddProjectBullet(idx)}
                       >
                         <Plus size={13} />
-                        <span>Adicionar destaque do projeto</span>
+                        <span>
+                          {isEn
+                            ? "Add project highlight"
+                            : "Adicionar destaque do projeto"}
+                        </span>
                       </button>
                     </div>
                   ) : (
@@ -395,7 +427,7 @@ export function TailoredResumeTab({
 
                   {proj.technologies && proj.technologies.length > 0 && (
                     <div className={styles.atsTechLine}>
-                      <strong>Tecnologias:</strong>{" "}
+                      <strong>{isEn ? "Stack:" : "Tecnologias:"}</strong>{" "}
                       {proj.technologies.join(", ")}
                     </div>
                   )}
@@ -406,7 +438,9 @@ export function TailoredResumeTab({
 
         {profile?.educations && profile.educations.length > 0 && (
           <section className={styles.atsSection}>
-            <h2 className={styles.atsSectionTitle}>Formação Acadêmica</h2>
+            <h2 className={styles.atsSectionTitle}>
+              {isEn ? "Education" : "Formação Acadêmica"}
+            </h2>
             {profile.educations.map((ed, idx) => (
               <div key={idx} className={styles.atsItem}>
                 <div className={styles.atsItemHeader}>
@@ -418,7 +452,7 @@ export function TailoredResumeTab({
                     </span>
                   </div>
                   <span className={styles.atsItemPeriod}>
-                    {ed.startDate} – {ed.endDate}
+                    {ed.startDate} – {ed.endDate || (isEn ? "Present" : "Presente")}
                   </span>
                 </div>
               </div>
@@ -428,7 +462,9 @@ export function TailoredResumeTab({
 
         {profile?.certifications && profile.certifications.length > 0 && (
           <section className={styles.atsSection}>
-            <h2 className={styles.atsSectionTitle}>Idiomas</h2>
+            <h2 className={styles.atsSectionTitle}>
+              {isEn ? "Languages & Certifications" : "Idiomas"}
+            </h2>
             <div className={styles.atsSkillsText}>
               <p>{profile.certifications.map((c) => c.name).join(" • ")}</p>
             </div>

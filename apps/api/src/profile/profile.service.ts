@@ -1,14 +1,19 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { MasterProfileDto } from "@tailored-cv/types";
-import { SkillCategory } from "@prisma/client";
+import { Prisma, SkillCategory } from "@prisma/client";
+import { AIService } from "../ai/ai.service";
 import { loadSeedProfileData } from "./utils/profile-loader.util";
+import type { MasterProfileInput } from "@tailored-cv/validation";
 
 @Injectable()
 export class ProfileService {
   private readonly logger = new Logger(ProfileService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AIService,
+  ) {}
 
   async getProfile(): Promise<MasterProfileDto> {
     const profile = await this.prisma.profile.findFirst({
@@ -77,12 +82,16 @@ export class ProfileService {
         issueDate: c.issueDate,
         url: c.url,
       })),
+      englishCv: (profile.englishCv as unknown as MasterProfileDto) || null,
+      englishCvUpdatedAt: profile.englishCvUpdatedAt?.toISOString() ?? null,
       createdAt: profile.createdAt.toISOString(),
       updatedAt: profile.updatedAt.toISOString(),
     };
   }
 
-  async updateProfile(data: MasterProfileDto): Promise<MasterProfileDto> {
+  async updateProfile(
+    data: MasterProfileDto | MasterProfileInput,
+  ): Promise<MasterProfileDto> {
     const existing = await this.prisma.profile.findFirst();
 
     const profileId = existing?.id;
@@ -185,10 +194,13 @@ export class ProfileService {
 
   async seedDefaultProfile(): Promise<MasterProfileDto> {
     const data = loadSeedProfileData();
+    const existing = await this.prisma.profile.findFirst();
+
+    if (existing) {
+      return this.updateProfile(data);
+    }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.profile.deleteMany();
-
       await tx.profile.create({
         data: {
           fullName: data.fullName,
@@ -252,4 +264,36 @@ export class ProfileService {
 
     return this.getProfile();
   }
+
+  async generateEnglishProfile(): Promise<MasterProfileDto> {
+    const currentProfile = await this.getProfile();
+    this.logger.log(
+      `Generating/updating English CV for profile ${currentProfile.id}...`,
+    );
+
+    const translated =
+      await this.aiService.translateProfileToEnglish(currentProfile);
+
+    await this.prisma.profile.update({
+      where: { id: currentProfile.id },
+      data: {
+        englishCv: translated as unknown as Prisma.InputJsonValue,
+        englishCvUpdatedAt: new Date(),
+      },
+    });
+
+    return this.getProfile();
+  }
+
+  async getEnglishProfile(): Promise<{
+    englishCv: MasterProfileDto | null;
+    englishCvUpdatedAt: string | null;
+  }> {
+    const profile = await this.getProfile();
+    return {
+      englishCv: profile.englishCv ?? null,
+      englishCvUpdatedAt: profile.englishCvUpdatedAt ?? null,
+    };
+  }
 }
+

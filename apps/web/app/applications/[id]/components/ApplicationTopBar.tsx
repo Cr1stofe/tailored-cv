@@ -21,6 +21,8 @@ interface ApplicationTopBarProps {
   isAnalyzing: boolean;
   isTailoring: boolean;
   hasTailoredResume: boolean;
+  tailorLanguage: "PT" | "EN";
+  onTailorLanguageChange: (lang: "PT" | "EN") => void;
   onSaveResume: () => void;
   onCancelEditing: () => void;
   onAnalyze: () => void;
@@ -37,6 +39,8 @@ export function ApplicationTopBar({
   isAnalyzing,
   isTailoring,
   hasTailoredResume,
+  tailorLanguage,
+  onTailorLanguageChange,
   onSaveResume,
   onCancelEditing,
   onAnalyze,
@@ -51,6 +55,11 @@ export function ApplicationTopBar({
         <h1 className={styles.positionTitle}>{application.position}</h1>
         <div className={styles.companyRow}>
           <span>{application.company}</span>
+          <span
+            className={`${styles.langBadge} ${application.targetLanguage === "EN" ? styles.en : ""}`}
+          >
+            {application.targetLanguage === "EN" ? "🇺🇸 Vaga em Inglês" : "🇧🇷 Vaga em Português"}
+          </span>
           {application.location && (
             <>
               <span>•</span>
@@ -108,6 +117,26 @@ export function ApplicationTopBar({
               <span>{isAnalyzing ? "Analisando..." : "Reanalisar Vaga"}</span>
             </button>
 
+            <div
+              className={styles.tailorLangToggle}
+              title="Idioma em que o currículo será adaptado"
+            >
+              <button
+                type="button"
+                className={tailorLanguage === "PT" ? styles.active : ""}
+                onClick={() => onTailorLanguageChange("PT")}
+              >
+                PT
+              </button>
+              <button
+                type="button"
+                className={tailorLanguage === "EN" ? styles.active : ""}
+                onClick={() => onTailorLanguageChange("EN")}
+              >
+                EN
+              </button>
+            </div>
+
             <button
               type="button"
               className={`${styles.actionButton} ${styles.secondary}`}
@@ -117,10 +146,10 @@ export function ApplicationTopBar({
               <FileCheck size={16} />
               <span>
                 {isTailoring
-                  ? "Adaptando CV..."
+                  ? `Adaptando (${tailorLanguage})...`
                   : hasTailoredResume
-                    ? "Reescrever com IA"
-                    : "Gerar Currículo Adaptado"}
+                    ? `Reescrever (${tailorLanguage})`
+                    : `Gerar CV (${tailorLanguage})`}
               </span>
             </button>
 
