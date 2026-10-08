@@ -42,6 +42,8 @@ model Profile {
   githubUrl    String?  @map("github_url")
   portfolioUrl String?  @map("portfolio_url")
   summary      String?  @db.Text
+  englishCv          Json?     @map("english_cv")
+  englishCvUpdatedAt DateTime? @map("english_cv_updated_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -146,6 +148,7 @@ model JobApplication {
   location       String?
   url            String?
   jobDescription String            @map("job_description") @db.Text
+  targetLanguage String            @default("PT") @map("target_language")
   status         ApplicationStatus @default(DRAFT)
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
@@ -184,6 +187,7 @@ model TailoredResume {
   applicationId       String   @map("application_id")
   version             Int      @default(1)
   title               String
+  language            String   @default("PT")
   targetedHeadline    String?  @map("targeted_headline")
   reframedSummary     String   @map("reframed_summary") @db.Text
   highlightedSkills   String[] @map("highlighted_skills")

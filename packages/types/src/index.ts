@@ -64,6 +64,8 @@ export interface CertificationDto {
   url?: string | null;
 }
 
+export type SupportedLanguage = "PT" | "EN";
+
 export interface MasterProfileDto {
   id?: string;
   fullName: string;
@@ -79,6 +81,8 @@ export interface MasterProfileDto {
   projects: ProjectDto[];
   educations: EducationDto[];
   certifications: CertificationDto[];
+  englishCv?: MasterProfileDto | null;
+  englishCvUpdatedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -124,6 +128,7 @@ export interface TailoredResumeDto {
   applicationId: string;
   version: number;
   title: string;
+  language: SupportedLanguage;
   targetedHeadline?: string | null;
   reframedSummary: string;
   highlightedSkills: string[];
@@ -141,6 +146,7 @@ export interface JobApplicationDto {
   location?: string | null;
   url?: string | null;
   jobDescription: string;
+  targetLanguage: SupportedLanguage;
   status: ApplicationStatus;
   jobAnalysis?: JobAnalysisDto | null;
   tailoredResumes?: TailoredResumeDto[];
@@ -153,6 +159,7 @@ export interface JobAnalysisInput {
   company: string;
   position: string;
   masterProfile: MasterProfileDto;
+  targetLanguage?: SupportedLanguage;
 }
 
 export interface TailorResumeInput {
@@ -161,6 +168,7 @@ export interface TailorResumeInput {
   position: string;
   masterProfile: MasterProfileDto;
   jobAnalysis?: JobAnalysisDto;
+  targetLanguage?: SupportedLanguage;
 }
 
 export interface AIHealthStatus {
@@ -186,5 +194,9 @@ export interface AIProvider {
       "id" | "applicationId" | "version" | "createdAt" | "updatedAt"
     >
   >;
+  translateProfileToEnglish(
+    profile: MasterProfileDto,
+  ): Promise<MasterProfileDto>;
   checkHealth?(): Promise<AIHealthStatus>;
 }
+

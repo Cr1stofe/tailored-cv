@@ -74,6 +74,7 @@ describe("JobApplicationService", () => {
       company: "Acme Inc",
       position: "Staff Engineer",
       jobDescription: "Vaga de Staff Engineer com foco em arquitetura.",
+      targetLanguage: "PT",
     });
 
     expect(result).toBeDefined();

@@ -20,14 +20,16 @@ services:
       retries: 5
 
   api:
+    image: tailored-cv-api:dev
     build:
       context: .
       dockerfile: Dockerfile.dev
     container_name: tailored-cv-api
     restart: unless-stopped
-    command: pnpm --filter=@tailored-cv/api dev
+    command: sh -c "pnpm --filter=@tailored-cv/api prisma:generate && pnpm --filter=@tailored-cv/api dev"
     volumes:
       - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/prisma:/app/apps/api/prisma
       - ./apps/api/data:/app/apps/api/data:ro
       - ./packages:/app/packages
     environment:
@@ -51,6 +53,7 @@ services:
       - web_gateway
 
   web:
+    image: tailored-cv-web:dev
     build:
       context: .
       dockerfile: Dockerfile.dev

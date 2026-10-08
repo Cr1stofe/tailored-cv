@@ -101,6 +101,8 @@ export const masterProfileSchema = z.object({
   certifications: z.array(certificationSchema).default([]),
 });
 
+export const supportedLanguageSchema = z.enum(["PT", "EN"]);
+
 export const createJobApplicationSchema = z.object({
   company: z.string().min(1, "Nome da empresa é obrigatório").trim(),
   position: z.string().min(1, "Cargo é obrigatório").trim(),
@@ -115,6 +117,7 @@ export const createJobApplicationSchema = z.object({
     .string()
     .min(20, "Descrição da vaga deve conter pelo menos 20 caracteres")
     .trim(),
+  targetLanguage: supportedLanguageSchema,
 });
 
 export const jobAnalysisOutputSchema = z.object({
@@ -151,6 +154,7 @@ export const tailoredProjectItemSchema = z.object({
 
 export const tailoredResumeOutputSchema = z.object({
   title: z.string().min(1),
+  language: supportedLanguageSchema.optional().default("PT"),
   targetedHeadline: z.string().nullable().optional(),
   reframedSummary: z.string().min(1),
   highlightedSkills: z.array(z.string()),
@@ -165,3 +169,4 @@ export type CreateJobApplicationInput = z.infer<
 >;
 export type JobAnalysisOutput = z.infer<typeof jobAnalysisOutputSchema>;
 export type TailoredResumeOutput = z.infer<typeof tailoredResumeOutputSchema>;
+

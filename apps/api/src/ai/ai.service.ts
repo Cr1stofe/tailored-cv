@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { AIHealthStatus } from "@tailored-cv/types";
+import type { AIHealthStatus, MasterProfileDto } from "@tailored-cv/types";
 import {
   AIProvider,
   JobAnalysisInput,
@@ -43,6 +43,12 @@ export class AIService implements AIProvider {
     return this.provider.tailorResume(input);
   }
 
+  async translateProfileToEnglish(
+    profile: MasterProfileDto,
+  ): Promise<MasterProfileDto> {
+    return this.provider.translateProfileToEnglish(profile);
+  }
+
   async checkHealth(): Promise<AIHealthStatus> {
     if (this.provider.checkHealth) {
       return this.provider.checkHealth();
@@ -55,3 +61,4 @@ export class AIService implements AIProvider {
     };
   }
 }
+

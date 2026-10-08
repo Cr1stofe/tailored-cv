@@ -4,6 +4,7 @@ import {
   TailoredResumeDto,
   JobAnalysisDto,
   ApplicationStatus,
+  SupportedLanguage,
 } from "@tailored-cv/types";
 import { CreateJobApplicationInput } from "@tailored-cv/validation";
 
@@ -65,6 +66,13 @@ export const api = {
     }),
   resetSeedProfile: () =>
     request<MasterProfileDto>("/profile/reset-seed", { method: "POST" }),
+  generateEnglishProfile: () =>
+    request<MasterProfileDto>("/profile/generate-english", { method: "POST" }),
+  getEnglishProfile: () =>
+    request<{
+      englishCv: MasterProfileDto | null;
+      englishCvUpdatedAt: string | null;
+    }>("/profile/english"),
 
   getApplications: () => request<JobApplicationDto[]>("/job-applications"),
   getApplicationById: (id: string) =>
@@ -88,9 +96,10 @@ export const api = {
     request<JobAnalysisDto>(`/job-applications/${id}/analyze`, {
       method: "POST",
     }),
-  tailorResume: (id: string) =>
+  tailorResume: (id: string, targetLanguage?: SupportedLanguage) =>
     request<TailoredResumeDto>(`/job-applications/${id}/tailor`, {
       method: "POST",
+      body: JSON.stringify({ targetLanguage }),
     }),
   getTailoredResume: (id: string) =>
     request<TailoredResumeDto>(`/job-applications/${id}/tailored-resume`),
@@ -100,3 +109,4 @@ export const api = {
       body: JSON.stringify(data),
     }),
 };
+

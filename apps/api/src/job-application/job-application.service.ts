@@ -8,6 +8,7 @@ import {
   TailoredResumeDto,
   TailoredExperienceItem,
   TailoredProjectItem,
+  SupportedLanguage,
 } from "@tailored-cv/types";
 import { CreateJobApplicationInput } from "@tailored-cv/validation";
 import { Prisma } from "@prisma/client";
@@ -59,6 +60,7 @@ export class JobApplicationService {
         location: data.location,
         url: data.url,
         jobDescription: data.jobDescription,
+        targetLanguage: data.targetLanguage || "PT",
         status: "DRAFT",
       },
       include: {
@@ -141,9 +143,14 @@ export class JobApplicationService {
     return savedAnalysis;
   }
 
-  async tailor(id: string): Promise<TailoredResumeDto> {
+  async tailor(
+    id: string,
+    options?: { targetLanguage?: SupportedLanguage },
+  ): Promise<TailoredResumeDto> {
     const application = await this.findById(id);
     const masterProfile = await this.profileService.getProfile();
+    const targetLanguage: SupportedLanguage =
+      options?.targetLanguage || application.targetLanguage || "PT";
 
     const tailorOutput = await this.aiService.tailorResume({
       company: application.company,
@@ -151,6 +158,7 @@ export class JobApplicationService {
       jobDescription: application.jobDescription,
       masterProfile,
       jobAnalysis: application.jobAnalysis || undefined,
+      targetLanguage,
     });
 
     const existingCount = await this.prisma.tailoredResume.count({
@@ -162,6 +170,7 @@ export class JobApplicationService {
         applicationId: id,
         version: existingCount + 1,
         title: tailorOutput.title,
+        language: targetLanguage,
         targetedHeadline: tailorOutput.targetedHeadline,
         reframedSummary: tailorOutput.reframedSummary,
         highlightedSkills: tailorOutput.highlightedSkills,
@@ -183,6 +192,7 @@ export class JobApplicationService {
       applicationId: createdResume.applicationId,
       version: createdResume.version,
       title: createdResume.title,
+      language: (createdResume.language as SupportedLanguage) || "PT",
       targetedHeadline: createdResume.targetedHeadline,
       reframedSummary: createdResume.reframedSummary,
       highlightedSkills: createdResume.highlightedSkills,
@@ -212,6 +222,7 @@ export class JobApplicationService {
       applicationId: resume.applicationId,
       version: resume.version,
       title: resume.title,
+      language: (resume.language as SupportedLanguage) || "PT",
       targetedHeadline: resume.targetedHeadline,
       reframedSummary: resume.reframedSummary,
       highlightedSkills: resume.highlightedSkills,
@@ -280,6 +291,7 @@ export class JobApplicationService {
       applicationId: updated.applicationId,
       version: updated.version,
       title: updated.title,
+      language: (updated.language as SupportedLanguage) || "PT",
       targetedHeadline: updated.targetedHeadline,
       reframedSummary: updated.reframedSummary,
       highlightedSkills: updated.highlightedSkills,
@@ -300,6 +312,7 @@ export class JobApplicationService {
     location: string | null;
     url: string | null;
     jobDescription: string;
+    targetLanguage?: string;
     status: string;
     createdAt: Date;
     updatedAt: Date;
@@ -324,6 +337,7 @@ export class JobApplicationService {
       applicationId: string;
       version: number;
       title: string;
+      language?: string;
       targetedHeadline: string | null;
       reframedSummary: string;
       highlightedSkills: string[];
@@ -341,6 +355,7 @@ export class JobApplicationService {
       location: item.location,
       url: item.url,
       jobDescription: item.jobDescription,
+      targetLanguage: (item.targetLanguage as SupportedLanguage) || "PT",
       status: item.status as ApplicationStatus,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
@@ -367,6 +382,7 @@ export class JobApplicationService {
         applicationId: r.applicationId,
         version: r.version,
         title: r.title,
+        language: (r.language as SupportedLanguage) || "PT",
         targetedHeadline: r.targetedHeadline,
         reframedSummary: r.reframedSummary,
         highlightedSkills: r.highlightedSkills,

@@ -21,6 +21,7 @@ export default function NewApplicationPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateJobApplicationInput>({
     resolver: zodResolver(createJobApplicationSchema),
@@ -30,8 +31,11 @@ export default function NewApplicationPage() {
       location: "",
       url: "",
       jobDescription: "",
+      targetLanguage: "PT",
     },
   });
+
+  const selectedLang = watch("targetLanguage");
 
   const onSubmit = async (data: CreateJobApplicationInput) => {
     setIsSubmitting(true);
@@ -106,6 +110,37 @@ export default function NewApplicationPage() {
                 <span className={styles.error}>{errors.url.message}</span>
               )}
             </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Idioma Alvo do Currículo *</label>
+            <div className={styles.radioGroup}>
+              <label
+                className={`${styles.radioLabel} ${selectedLang === "PT" ? styles.selected : ""}`}
+              >
+                <input
+                  type="radio"
+                  value="PT"
+                  {...register("targetLanguage")}
+                />
+                <span>🇧🇷 Português (Brasil)</span>
+              </label>
+              <label
+                className={`${styles.radioLabel} ${selectedLang === "EN" ? styles.selected : ""}`}
+              >
+                <input
+                  type="radio"
+                  value="EN"
+                  {...register("targetLanguage")}
+                />
+                <span>🇺🇸 English (US / Global)</span>
+              </label>
+            </div>
+            <span className={styles.hint}>
+              {selectedLang === "EN"
+                ? "A IA adaptará e reestruturará seu currículo diretamente em inglês fluente para vagas e triagem ATS internacional."
+                : "A IA adaptará seu currículo em português com terminologias técnicas padrão de mercado."}
+            </span>
           </div>
 
           <div className={styles.formGroup}>

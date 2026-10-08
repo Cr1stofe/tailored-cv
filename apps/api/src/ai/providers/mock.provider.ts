@@ -1,5 +1,11 @@
 import { Logger } from "@nestjs/common";
-import type { AIHealthStatus } from "@tailored-cv/types";
+import type {
+  AIHealthStatus,
+  MasterProfileDto,
+  ExperienceDto,
+  ProjectDto,
+  EducationDto,
+} from "@tailored-cv/types";
 import {
   AIProvider,
   JobAnalysisInput,
@@ -95,6 +101,7 @@ export class MockProvider implements AIProvider {
 
     return {
       title: `Currículo Adaptado — ${input.position} (${input.company})`,
+      language: input.targetLanguage || "PT",
       targetedHeadline: `${input.position} | React · Next.js · TypeScript · Node.js · NestJS`,
       reframedSummary:
         input.masterProfile.summary ||
@@ -122,4 +129,42 @@ export class MockProvider implements AIProvider {
       })),
     };
   }
+
+  async translateProfileToEnglish(
+    profile: MasterProfileDto,
+  ): Promise<MasterProfileDto> {
+    this.logger.log(
+      `Executing Mock Profile Translation to English for ${profile.fullName}`,
+    );
+
+    return {
+      ...profile,
+      summary: profile.summary
+        ? "Senior Full Stack Engineer with strong expertise in building scalable, production-grade systems across React, Next.js, Node.js, and cloud infrastructure. Focused on high performance and clean architecture."
+        : null,
+      experiences: (profile.experiences || []).map((e: ExperienceDto) => ({
+        ...e,
+        position: e.position
+          .replace(/Desenvolvedor/gi, "Developer")
+          .replace(/Pleno/gi, "Mid-level")
+          .replace(/Sênior/gi, "Senior"),
+        highlights: (e.highlights || []).map(
+          (h: string) => `Engineered and delivered: ${h}`,
+        ),
+      })),
+      projects: (profile.projects || []).map((p: ProjectDto) => ({
+        ...p,
+        description: `High-performance application: ${p.description}`,
+        highlights: (p.highlights || []).map(
+          (h: string) => `Implemented: ${h}`,
+        ),
+      })),
+      educations: (profile.educations || []).map((ed: EducationDto) => ({
+        ...ed,
+        degree: ed.degree.replace(/Bacharelado/gi, "Bachelor's Degree"),
+      })),
+    };
+  }
 }
+
+
