@@ -61,10 +61,9 @@ services:
     restart: unless-stopped
     command: pnpm --filter=@tailored-cv/web dev
     volumes:
-      - ./apps/web/app:/app/apps/web/app
-      - ./apps/web/components:/app/apps/web/components
-      - ./apps/web/services:/app/apps/web/services
-      - ./apps/web/styles:/app/apps/web/styles
+      - ./apps/web:/app/apps/web
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
       - ./packages:/app/packages
     environment:
       NODE_ENV: development

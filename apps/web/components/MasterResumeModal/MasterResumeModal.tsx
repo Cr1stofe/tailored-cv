@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Printer, X, Sparkles, Loader2 } from "lucide-react";
 import { MasterProfileDto } from "@tailored-cv/types";
+import { printResume } from "@/lib/print-resume";
 import styles from "./MasterResumeModal.module.scss";
 
 interface MasterResumeModalProps {
@@ -41,14 +42,18 @@ export function MasterResumeModal({
 
   if (!isOpen) return null;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const isEn = currentLang === "EN";
   const activeProfile = isEn && profile.englishCv ? profile.englishCv : profile;
   const hasEnglishCv = Boolean(profile.englishCv);
   const isCompact = viewMode === "compact";
+
+  const handlePrint = () => {
+    printResume({
+      fullName: activeProfile.fullName,
+      language: currentLang,
+      isMaster: true,
+    });
+  };
 
   const noiseSkills = new Set(["HTML", "CSS", "SQL", "Redux", "JWT", "WordPress"]);
 
