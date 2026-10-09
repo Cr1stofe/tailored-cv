@@ -12,7 +12,15 @@ export class PrismaService
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
-    const pool = new Pool({ connectionString });
+    if (!connectionString) {
+      throw new Error("DATABASE_URL é obrigatória para iniciar a API.");
+    }
+    const pool = new Pool({
+      connectionString,
+      max: Number(process.env.DB_POOL_MAX || 10),
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+    });
     const adapter = new PrismaPg(pool);
     super({ adapter });
     this.pool = pool;

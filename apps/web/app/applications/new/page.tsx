@@ -36,12 +36,13 @@ export default function NewApplicationPage() {
   });
 
   const selectedLang = watch("targetLanguage");
+  const jobDescription = watch("jobDescription", "");
 
   const onSubmit = async (data: CreateJobApplicationInput) => {
     setIsSubmitting(true);
     try {
       const created = await api.createApplication(data);
-      toast.success("Vaga cadastrada com sucesso! Iniciando análise...");
+      toast.success("Vaga cadastrada com sucesso!");
       router.push(`/applications/${created.id}`);
     } catch (err) {
       toast.error(
@@ -160,6 +161,12 @@ export default function NewApplicationPage() {
                 de palavras-chave para o algoritmo de ATS.
               </span>
             )}
+            <span className={styles.characterCount}>
+              {jobDescription.length} caracteres
+              {jobDescription.length > 0 && jobDescription.length < 20
+                ? " · mínimo: 20"
+                : ""}
+            </span>
           </div>
 
           <div className={styles.actions}>
@@ -174,7 +181,7 @@ export default function NewApplicationPage() {
             >
               <Sparkles size={16} />
               <span>
-                {isSubmitting ? "Salvando Vaga..." : "Salvar & Analisar Vaga"}
+                {isSubmitting ? "Salvando Vaga..." : "Salvar e Continuar"}
               </span>
             </button>
           </div>

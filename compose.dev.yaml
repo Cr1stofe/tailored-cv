@@ -14,7 +14,11 @@ services:
     networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tailored_cv} -d ${POSTGRES_DB:-tailored_cv}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-tailored_cv} -d ${POSTGRES_DB:-tailored_cv}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -43,6 +47,7 @@ services:
       INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
       INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
       INITIAL_USER_USERNAME: ${INITIAL_USER_USERNAME:-}
+      RUN_MIGRATIONS: "false"
     ports:
       - "3001:3001"
     depends_on:
@@ -51,6 +56,13 @@ services:
     networks:
       - default
       - web_gateway
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health/ready || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
 
   web:
     image: tailored-cv-web:dev
@@ -73,7 +85,7 @@ services:
       - "3000:3000"
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
     networks:
       - default
       - web_gateway

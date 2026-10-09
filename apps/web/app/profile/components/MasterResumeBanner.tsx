@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Printer, Sparkles, Loader2, Globe, CheckCircle2 } from "lucide-react";
+import {
+  FileText,
+  Printer,
+  Sparkles,
+  Loader2,
+  Globe,
+  CheckCircle2,
+} from "lucide-react";
 import styles from "../profile.module.scss";
 
 interface MasterResumeBannerProps {
@@ -53,7 +60,10 @@ export function MasterResumeBanner({
           >
             <span>🇺🇸 English (IA ATS)</span>
             {hasEnglishCv && (
-              <CheckCircle2 size={13} style={{ color: "#34d399", marginLeft: "2px" }} />
+              <CheckCircle2
+                size={13}
+                style={{ color: "#34d399", marginLeft: "2px" }}
+              />
             )}
           </button>
         </div>
@@ -63,9 +73,9 @@ export function MasterResumeBanner({
             <div className={styles.badge}>Documento Consolidado • PT-BR</div>
             <h3>Currículo Master Abrangente</h3>
             <p>
-              Versão executiva completa baseada no seu perfil, estruturada com os
-              pontos mais importantes e formatação limpa 100% pronta para triagem
-              ATS.
+              Versão executiva completa baseada no seu perfil, estruturada com
+              os pontos mais importantes e formatação limpa 100% pronta para
+              triagem ATS.
             </p>
           </>
         ) : (
@@ -73,9 +83,13 @@ export function MasterResumeBanner({
             <div
               className={styles.badge}
               style={{
-                background: hasEnglishCv ? "rgba(16, 185, 129, 0.15)" : "rgba(168, 85, 247, 0.15)",
+                background: hasEnglishCv
+                  ? "rgba(16, 185, 129, 0.15)"
+                  : "rgba(168, 85, 247, 0.15)",
                 color: hasEnglishCv ? "#34d399" : "#c084fc",
-                borderColor: hasEnglishCv ? "rgba(16, 185, 129, 0.35)" : "rgba(168, 85, 247, 0.35)",
+                borderColor: hasEnglishCv
+                  ? "rgba(16, 185, 129, 0.35)"
+                  : "rgba(168, 85, 247, 0.35)",
               }}
             >
               {hasEnglishCv
@@ -201,4 +215,3 @@ export function MasterResumeBanner({
     </div>
   );
 }
-

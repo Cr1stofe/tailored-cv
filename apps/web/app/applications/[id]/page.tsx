@@ -11,6 +11,7 @@ import {
   TailoredResumeDto,
   MasterProfileDto,
 } from "@tailored-cv/types";
+import type { TailoredResumeFormInput } from "@tailored-cv/validation";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
 import { printResume } from "@/lib/print-resume";
 import { ApplicationTopBar } from "./components/ApplicationTopBar";
@@ -33,20 +34,20 @@ export default function ApplicationDetailPage({
   const [profile, setProfile] = useState<MasterProfileDto | null>(null);
   const [tailoredResume, setTailoredResume] =
     useState<TailoredResumeDto | null>(null);
+  const [tailoredResumes, setTailoredResumes] = useState<TailoredResumeDto[]>(
+    [],
+  );
   const [activeTab, setActiveTab] = useState<"job" | "analysis" | "resume">(
     "job",
   );
 
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
 
   const [isEditingResume, setIsEditingResume] = useState(false);
-  const [editedResume, setEditedResume] = useState<TailoredResumeDto | null>(
-    null,
-  );
   const [isSavingResume, setIsSavingResume] = useState(false);
-  const [newSkillText, setNewSkillText] = useState("");
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -72,6 +73,8 @@ export default function ApplicationDetailPage({
   }, [id]);
 
   async function loadData() {
+    setIsLoading(true);
+    setLoadError(false);
     try {
       const [appData, profileData] = await Promise.all([
         api.getApplicationById(id),
@@ -83,18 +86,38 @@ export default function ApplicationDetailPage({
         setTailorLanguage(appData.targetLanguage);
       }
 
-      if (appData.tailoredResumes && appData.tailoredResumes.length > 0) {
-        setTailoredResume(appData.tailoredResumes[0] || null);
+      const savedResumes = appData.tailoredResumes || [];
+      setTailoredResumes(savedResumes);
+      const preferredResume =
+        savedResumes.find(
+          (resume) => resume.language === appData.targetLanguage,
+        ) || savedResumes[0];
+
+      if (preferredResume) {
+        setTailoredResume(preferredResume);
+        setTailorLanguage(preferredResume.language);
         setActiveTab("resume");
       } else if (appData.jobAnalysis) {
         setActiveTab("analysis");
       }
     } catch {
+      setLoadError(true);
       toast.error("Erro ao carregar dados da candidatura");
     } finally {
       setIsLoading(false);
     }
   }
+
+  const handleTailorLanguageChange = (language: "PT" | "EN") => {
+    setTailorLanguage(language);
+    const savedResume = tailoredResumes.find(
+      (resume) => resume.language === language,
+    );
+
+    setIsEditingResume(false);
+    setTailoredResume(savedResume || null);
+    setActiveTab("resume");
+  };
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
@@ -118,9 +141,14 @@ export default function ApplicationDetailPage({
     try {
       const resume = await api.tailorResume(id, tailorLanguage);
       setTailoredResume(resume);
+      setTailoredResumes((current) => [
+        resume,
+        ...current.filter((item) => item.language !== resume.language),
+      ]);
       setIsEditingResume(false);
       const updated = await api.getApplicationById(id);
       setApplication(updated);
+      setTailoredResumes(updated.tailoredResumes || []);
       setActiveTab("resume");
       toast.success(
         tailorLanguage === "EN"
@@ -138,24 +166,26 @@ export default function ApplicationDetailPage({
 
   const startEditing = () => {
     if (!tailoredResume) return;
-    setEditedResume(JSON.parse(JSON.stringify(tailoredResume)));
     setIsEditingResume(true);
     setActiveTab("resume");
   };
 
   const cancelEditing = () => {
     setIsEditingResume(false);
-    setEditedResume(null);
   };
 
-  const handleSaveResume = async () => {
-    if (!editedResume) return;
+  const handleSaveResume = async (formData: TailoredResumeFormInput) => {
     setIsSavingResume(true);
     try {
-      const updated = await api.updateTailoredResume(id, editedResume);
+      const updated = await api.updateTailoredResume(id, {
+        ...formData,
+        resumeId: tailoredResume?.id,
+      });
       setTailoredResume(updated);
+      setTailoredResumes((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
       setIsEditingResume(false);
-      setEditedResume(null);
       toast.success("Currículo atualizado com sucesso!");
     } catch (err) {
       toast.error(
@@ -173,130 +203,37 @@ export default function ApplicationDetailPage({
         fullName: profile?.fullName,
         position: application?.position,
         company: application?.company,
-        language: tailoredResume?.language || application?.targetLanguage || "PT",
+        language:
+          tailoredResume?.language || application?.targetLanguage || "PT",
         isMaster: false,
       });
     }, 150);
   };
 
-  const updateEditedHeadline = (val: string) => {
-    if (!editedResume) return;
-    setEditedResume({ ...editedResume, targetedHeadline: val });
-  };
-
-  const updateEditedSummary = (val: string) => {
-    if (!editedResume) return;
-    setEditedResume({ ...editedResume, reframedSummary: val });
-  };
-
-  const handleAddSkill = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editedResume || !newSkillText.trim()) return;
-    const skills = editedResume.highlightedSkills || [];
-    if (!skills.includes(newSkillText.trim())) {
-      setEditedResume({
-        ...editedResume,
-        highlightedSkills: [...skills, newSkillText.trim()],
-      });
-    }
-    setNewSkillText("");
-  };
-
-  const handleRemoveSkill = (skillToRemove: string) => {
-    if (!editedResume) return;
-    setEditedResume({
-      ...editedResume,
-      highlightedSkills: (editedResume.highlightedSkills || []).filter(
-        (s) => s !== skillToRemove,
-      ),
-    });
-  };
-
-  const handleUpdateExperienceBullet = (
-    expIdx: number,
-    bIdx: number,
-    text: string,
-  ) => {
-    if (!editedResume) return;
-    const exps = [...editedResume.tailoredExperiences];
-    const targetExp = exps[expIdx];
-    if (!targetExp) return;
-    const highlights = [...(targetExp.reframedHighlights || [])];
-    highlights[bIdx] = text;
-    exps[expIdx] = { ...targetExp, reframedHighlights: highlights };
-    setEditedResume({ ...editedResume, tailoredExperiences: exps });
-  };
-
-  const handleAddExperienceBullet = (expIdx: number) => {
-    if (!editedResume) return;
-    const exps = [...editedResume.tailoredExperiences];
-    const targetExp = exps[expIdx];
-    if (!targetExp) return;
-    const highlights = [
-      ...(targetExp.reframedHighlights || []),
-      "Nova realização ou responsabilidade estratégica...",
-    ];
-    exps[expIdx] = { ...targetExp, reframedHighlights: highlights };
-    setEditedResume({ ...editedResume, tailoredExperiences: exps });
-  };
-
-  const handleRemoveExperienceBullet = (expIdx: number, bIdx: number) => {
-    if (!editedResume) return;
-    const exps = [...editedResume.tailoredExperiences];
-    const targetExp = exps[expIdx];
-    if (!targetExp) return;
-    const highlights = (targetExp.reframedHighlights || []).filter(
-      (_, idx) => idx !== bIdx,
-    );
-    exps[expIdx] = { ...targetExp, reframedHighlights: highlights };
-    setEditedResume({ ...editedResume, tailoredExperiences: exps });
-  };
-
-  const handleUpdateProjectBullet = (
-    projIdx: number,
-    bIdx: number,
-    text: string,
-  ) => {
-    if (!editedResume || !editedResume.tailoredProjects) return;
-    const projs = [...editedResume.tailoredProjects];
-    const targetProj = projs[projIdx];
-    if (!targetProj) return;
-    const highlights = [...(targetProj.reframedHighlights || [])];
-    highlights[bIdx] = text;
-    projs[projIdx] = { ...targetProj, reframedHighlights: highlights };
-    setEditedResume({ ...editedResume, tailoredProjects: projs });
-  };
-
-  const handleAddProjectBullet = (projIdx: number) => {
-    if (!editedResume || !editedResume.tailoredProjects) return;
-    const projs = [...editedResume.tailoredProjects];
-    const targetProj = projs[projIdx];
-    if (!targetProj) return;
-    const highlights = [
-      ...(targetProj.reframedHighlights || []),
-      "Novo destaque técnico ou resultado do projeto...",
-    ];
-    projs[projIdx] = { ...targetProj, reframedHighlights: highlights };
-    setEditedResume({ ...editedResume, tailoredProjects: projs });
-  };
-
-  const handleRemoveProjectBullet = (projIdx: number, bIdx: number) => {
-    if (!editedResume || !editedResume.tailoredProjects) return;
-    const projs = [...editedResume.tailoredProjects];
-    const targetProj = projs[projIdx];
-    if (!targetProj) return;
-    const highlights = (targetProj.reframedHighlights || []).filter(
-      (_, idx) => idx !== bIdx,
-    );
-    projs[projIdx] = { ...targetProj, reframedHighlights: highlights };
-    setEditedResume({ ...editedResume, tailoredProjects: projs });
-  };
-
-  if (isLoading || !application) {
+  if (isLoading) {
     return (
       <div className={styles.container}>
-        <div style={{ textAlign: "center", padding: "5rem", color: "#94a3b8" }}>
+        <div className={styles.loadingState} role="status" aria-live="polite">
+          <span className={styles.loadingSpinner} aria-hidden="true" />
           Carregando detalhes da vaga...
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError || !application) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorState} role="alert">
+          <strong>Não foi possível carregar esta candidatura.</strong>
+          <span>Verifique sua sessão ou tente novamente.</span>
+          <button
+            type="button"
+            className={`${styles.actionButton} ${styles.primary}`}
+            onClick={loadData}
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
@@ -319,8 +256,8 @@ export default function ApplicationDetailPage({
         isTailoring={isTailoring}
         hasTailoredResume={!!tailoredResume}
         tailorLanguage={tailorLanguage}
-        onTailorLanguageChange={setTailorLanguage}
-        onSaveResume={handleSaveResume}
+        savedLanguages={tailoredResumes.map((resume) => resume.language)}
+        onTailorLanguageChange={handleTailorLanguageChange}
         onCancelEditing={cancelEditing}
         onAnalyze={handleAnalyze}
         onTailor={handleTailor}
@@ -379,26 +316,13 @@ export default function ApplicationDetailPage({
       {activeTab === "resume" && (
         <TailoredResumeTab
           tailoredResume={tailoredResume}
-          editedResume={editedResume}
           profile={profile}
           isEditingResume={isEditingResume}
           isSavingResume={isSavingResume}
           isTailoring={isTailoring}
-          newSkillText={newSkillText}
           onTailor={handleTailor}
           onSaveResume={handleSaveResume}
           onCancelEditing={cancelEditing}
-          onUpdateHeadline={updateEditedHeadline}
-          onUpdateSummary={updateEditedSummary}
-          onAddSkill={handleAddSkill}
-          onRemoveSkill={handleRemoveSkill}
-          onNewSkillTextChange={setNewSkillText}
-          onUpdateExperienceBullet={handleUpdateExperienceBullet}
-          onAddExperienceBullet={handleAddExperienceBullet}
-          onRemoveExperienceBullet={handleRemoveExperienceBullet}
-          onUpdateProjectBullet={handleUpdateProjectBullet}
-          onAddProjectBullet={handleAddProjectBullet}
-          onRemoveProjectBullet={handleRemoveProjectBullet}
         />
       )}
 

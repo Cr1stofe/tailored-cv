@@ -1,6 +1,6 @@
 # Tailored CV — Web Frontend (`@tailored-cv/web`)
 
-Modern, high-performance web interface built with **Next.js 15** (App Router & Turbopack), **React 19**, and strict TypeScript. Incorporates a **Dark Luxury** design system and an integrated **BFF (Backend For Frontend)** reverse proxy.
+Modern web interface built with **Next.js 16** (App Router & Turbopack), **React 19**, and strict TypeScript. Incorporates a **Dark Luxury** design system and an integrated **BFF (Backend For Frontend)** reverse proxy.
 
 ---
 

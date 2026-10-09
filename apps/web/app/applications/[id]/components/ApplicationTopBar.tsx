@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { JobApplicationDto } from "@tailored-cv/types";
+import type { SupportedLanguage } from "@tailored-cv/types";
 import styles from "../application-detail.module.scss";
 
 interface ApplicationTopBarProps {
@@ -22,8 +23,9 @@ interface ApplicationTopBarProps {
   isTailoring: boolean;
   hasTailoredResume: boolean;
   tailorLanguage: "PT" | "EN";
+  savedLanguages: SupportedLanguage[];
   onTailorLanguageChange: (lang: "PT" | "EN") => void;
-  onSaveResume: () => void;
+  onSaveResume?: () => void;
   onCancelEditing: () => void;
   onAnalyze: () => void;
   onTailor: () => void;
@@ -40,6 +42,7 @@ export function ApplicationTopBar({
   isTailoring,
   hasTailoredResume,
   tailorLanguage,
+  savedLanguages,
   onTailorLanguageChange,
   onSaveResume,
   onCancelEditing,
@@ -58,7 +61,9 @@ export function ApplicationTopBar({
           <span
             className={`${styles.langBadge} ${application.targetLanguage === "EN" ? styles.en : ""}`}
           >
-            {application.targetLanguage === "EN" ? "🇺🇸 Vaga em Inglês" : "🇧🇷 Vaga em Português"}
+            {application.targetLanguage === "EN"
+              ? "🇺🇸 Vaga em Inglês"
+              : "🇧🇷 Vaga em Português"}
           </span>
           {application.location && (
             <>
@@ -85,7 +90,8 @@ export function ApplicationTopBar({
         {isEditingResume ? (
           <>
             <button
-              type="button"
+              type="submit"
+              form="tailored-resume-form"
               className={`${styles.actionButton} ${styles.primary}`}
               onClick={onSaveResume}
               disabled={isSavingResume}
@@ -117,24 +123,45 @@ export function ApplicationTopBar({
               <span>{isAnalyzing ? "Analisando..." : "Reanalisar Vaga"}</span>
             </button>
 
-            <div
-              className={styles.tailorLangToggle}
-              title="Idioma em que o currículo será adaptado"
-            >
-              <button
-                type="button"
-                className={tailorLanguage === "PT" ? styles.active : ""}
-                onClick={() => onTailorLanguageChange("PT")}
+            <div className={styles.languageControl}>
+              <div
+                className={styles.tailorLangToggle}
+                title="Idioma do currículo"
+                aria-label="Idioma do currículo"
               >
-                PT
-              </button>
-              <button
-                type="button"
-                className={tailorLanguage === "EN" ? styles.active : ""}
-                onClick={() => onTailorLanguageChange("EN")}
-              >
-                EN
-              </button>
+                <button
+                  type="button"
+                  className={tailorLanguage === "PT" ? styles.active : ""}
+                  onClick={() => onTailorLanguageChange("PT")}
+                  disabled={isTailoring}
+                  title={
+                    savedLanguages.includes("PT")
+                      ? "Versão PT salva"
+                      : "Gerar versão PT"
+                  }
+                >
+                  PT
+                </button>
+                <button
+                  type="button"
+                  className={tailorLanguage === "EN" ? styles.active : ""}
+                  onClick={() => onTailorLanguageChange("EN")}
+                  disabled={isTailoring}
+                  title={
+                    savedLanguages.includes("EN")
+                      ? "Versão EN salva"
+                      : "Gerar versão EN"
+                  }
+                >
+                  EN
+                </button>
+              </div>
+
+              <span className={styles.languageStatus} aria-live="polite">
+                {savedLanguages.includes(tailorLanguage)
+                  ? "✓ salva"
+                  : "não gerada"}
+              </span>
             </div>
 
             <button

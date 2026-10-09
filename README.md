@@ -12,7 +12,7 @@ The core principle guarantees that experience, technologies, metrics, job titles
 
 - **Monorepo:** [Turborepo](https://turbo.build/) + [pnpm](https://pnpm.io/) workspaces
 - **Runtime:** Node.js 24 LTS (`v24.21.0`)
-- **Frontend (`apps/web`):** Next.js 15 (App Router / React 19), SCSS Modules (Dark Luxury aesthetic), TypeScript strict, Lucide React, Sonner (toasts), React Hook Form + Zod, Zustand, BFF reverse proxy
+- **Frontend (`apps/web`):** Next.js 16 (App Router / React 19), SCSS Modules (Dark Luxury aesthetic), TypeScript strict, Lucide React, Sonner (toasts), React Hook Form + Zod, Zustand, BFF reverse proxy
 - **Backend (`apps/api`):** NestJS 11 (Modular architecture, DTOs, Pipes, Exception Filters, Guards, Interceptors), TypeScript strict
 - **Database & ORM:** PostgreSQL 17 + Prisma ORM 7 (Native `@prisma/adapter-pg` driver adapter with `pg.Pool`)
 - **AI & Provider Abstraction:** `@google/genai` (Gemini API with provider abstraction and deterministic fallbacks)
@@ -26,7 +26,7 @@ The core principle guarantees that experience, technologies, metrics, job titles
 ```text
 tailored-cv/
 ├── apps/
-│   ├── web/                     # Next.js 15 frontend (App Router & BFF)
+│   ├── web/                     # Next.js 16 frontend (App Router & BFF)
 │   │   ├── app/
 │   │   │   ├── api/[...path]/   # BFF route handler forwarding to NestJS
 │   │   │   ├── applications/    # Job application listing, creation, and tailored CV view
@@ -45,7 +45,7 @@ tailored-cv/
 │       ├── prisma/              # Relational schema, migrations, and seed.ts
 │       ├── src/
 │       │   ├── ai/              # AI abstraction (AIProvider, GeminiProvider, MockProvider)
-│       │   ├── auth/            # Session-based auth with secure cookies & Argon2id/Scrypt
+│       │   ├── auth/            # Session-based auth with secure cookies & Scrypt + Pepper
 │       │   ├── common/          # Global Filters, Guards, Interceptors, Pipes
 │       │   ├── config/          # Typed environment configuration
 │       │   ├── health/          # GET /health & PostgreSQL readiness probes
@@ -110,6 +110,8 @@ INITIAL_USER_USERNAME=your_username
 
 # AI Provider (Google Gemini API)
 GEMINI_API_KEY=your_gemini_api_key_here
+DB_POOL_MAX=10
+RUN_MIGRATIONS=true
 ```
 
 > **Security Note:** Secrets and credentials should never be committed to Git. The root `.gitignore` enforces exclusion of `.env` files.
@@ -140,6 +142,7 @@ Local access:
 
 - **Frontend:** [http://localhost:3000](http://localhost:3000)
 - **API Health:** [http://localhost:3001/health](http://localhost:3001/health)
+- **API Readiness:** [http://localhost:3001/health/ready](http://localhost:3001/health/ready)
 - **API Profile:** [http://localhost:3001/profile](http://localhost:3001/profile)
 - **API Job Applications:** [http://localhost:3001/job-applications](http://localhost:3001/job-applications)
 
@@ -147,9 +150,12 @@ Local access:
 
 ### 3. Containerized Execution (Production Standard)
 
-In production mode, **only port 3000 (Frontend)** is exposed to the host. The API (`3001`) and PostgreSQL (`5432`) communicate privately over the internal bridge network (`tailored-cv-net`). The database seed executes automatically on the API container's initial boot.
+In production mode, the API (`3001`) and PostgreSQL (`5432`) stay private. The web container is reachable through the external `web_gateway` network, which must be attached to the reverse proxy used by the deployment. The API applies pending Prisma migrations before starting; profile seeding remains an explicit operation.
 
 ```bash
+# Create the gateway network once when using Caddy, Traefik or Nginx:
+docker network create web_gateway 2>/dev/null || true
+
 # Build and run the entire stack in detached mode
 pnpm docker:prod
 # or: docker compose up --build -d
@@ -162,11 +168,22 @@ docker compose ps
 docker compose logs -f
 ```
 
+### Backup do PostgreSQL
+
+Faça backups periódicos e teste a restauração em ambiente separado. O script cria um dump customizado sem apagar backups anteriores:
+
+```bash
+chmod +x scripts/backup-postgres.sh
+./scripts/backup-postgres.sh ./backups/postgres
+```
+
+Em produção, replique os arquivos para armazenamento externo. O backup só é confiável depois de uma restauração validada.
+
 ---
 
 ## 📦 Applications & Packages
 
-- **[`apps/web`](apps/web/README.md)** — Next.js 15 frontend application (App Router, React 19, Dark Luxury design system, and BFF reverse proxy).
+- **[`apps/web`](apps/web/README.md)** — Next.js 16 frontend application (App Router, React 19, Dark Luxury design system, and BFF reverse proxy).
 - **[`apps/api`](apps/api/README.md)** — NestJS 11 backend service (Prisma 7, Scrypt + Pepper authentication, Gemini AI provider, and REST endpoints).
 - **`packages/validation`** — Shared Zod schemas ensuring end-to-end type safety and anti-hallucination contracts.
 - **`packages/types`** — Shared TypeScript models and interfaces.
@@ -176,24 +193,24 @@ docker compose logs -f
 
 ## 🛠️ Monorepo Scripts
 
-| Command                | Description                                                                  |
-| :--------------------- | :--------------------------------------------------------------------------- |
-| `pnpm dev`             | Starts Frontend and Backend in watch mode via Turborepo                      |
-| `pnpm build`           | Compiles all applications and shared packages (`apps/*`, `packages/*`)       |
-| `pnpm lint`            | Runs ESLint across all projects with zero tolerance for warnings             |
-| `pnpm format`          | Formats code with Prettier                                                   |
-| `pnpm format:check`    | Checks formatting compliance without writing files                           |
-| `pnpm typecheck`       | Strict TypeScript type-checking without `any`                                |
-| `pnpm test`            | Runs the automated test suite with Vitest                                    |
-| `pnpm docker:db`       | Boots PostgreSQL for local development with `127.0.0.1:5432` exposed to host |
-| `pnpm docker:dev`      | Starts full containerized development stack                                  |
-| `pnpm docker:prod`     | Starts full containerized production stack with strict private networking    |
-| `pnpm docker:seed`     | Triggers database seeding inside the running API container                   |
-| `pnpm docker:down`     | Shuts down and cleans up project containers                                  |
-| `pnpm prisma:generate` | Generates typed Prisma Client 7                                              |
-| `pnpm prisma:migrate`  | Applies Prisma migrations                                                    |
-| `pnpm prisma:seed`     | Runs TypeScript seed script (`prisma/seed.ts`)                               |
-| `pnpm prisma:studio`   | Opens Prisma Studio GUI for database inspection                              |
+| Command                | Description                                                                     |
+| :--------------------- | :------------------------------------------------------------------------------ |
+| `pnpm dev`             | Starts Frontend and Backend in watch mode via Turborepo                         |
+| `pnpm build`           | Compiles all applications and shared packages (`apps/*`, `packages/*`)          |
+| `pnpm lint`            | Runs ESLint across all projects with zero tolerance for warnings                |
+| `pnpm format`          | Formats code with Prettier                                                      |
+| `pnpm format:check`    | Checks formatting compliance without writing files                              |
+| `pnpm typecheck`       | Strict TypeScript type-checking without `any`                                   |
+| `pnpm test`            | Runs the automated test suite with Vitest                                       |
+| `pnpm docker:db`       | Boots PostgreSQL for local development with `127.0.0.1:5432` exposed to host    |
+| `pnpm docker:dev`      | Starts full containerized development stack                                     |
+| `pnpm docker:prod`     | Starts full containerized production stack with private API/database networking |
+| `pnpm docker:seed`     | Triggers database seeding inside the running API container                      |
+| `pnpm docker:down`     | Shuts down and cleans up project containers                                     |
+| `pnpm prisma:generate` | Generates typed Prisma Client 7                                                 |
+| `pnpm prisma:migrate`  | Applies Prisma migrations                                                       |
+| `pnpm prisma:seed`     | Runs TypeScript seed script (`prisma/seed.ts`)                                  |
+| `pnpm prisma:studio`   | Opens Prisma Studio GUI for database inspection                                 |
 
 ---
 

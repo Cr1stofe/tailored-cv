@@ -1,65 +1,54 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches:
-      - main
-      - feat/*
-      - fix/*
+    branches: [main, master]
   pull_request:
-    branches:
-      - main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Lint, Typecheck, Test & Build
+  quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          run_install: false
+          version: 12.9.1
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${runner.os }}-pnpm-store-
+          node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma Client
-        run: pnpm prisma:generate
+      - name: Check formatting
+        run: pnpm format:check
 
-      - name: Linting check
+      - name: Lint
         run: pnpm lint
 
-      - name: Type checking
+      - name: Typecheck
         run: pnpm typecheck
 
-      - name: Run automated test suite
+      - name: Test
         run: pnpm test
 
-      - name: Build packages and applications
+      - name: Validate Docker Compose files
+        run: |
+          cp .env.example .env
+          docker compose -f compose.yaml config --quiet
+          docker compose -f compose.dev.yaml config --quiet
+
+      - name: Build applications
         run: pnpm build

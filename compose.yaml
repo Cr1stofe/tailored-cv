@@ -12,7 +12,11 @@ services:
     networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tailored_cv} -d ${POSTGRES_DB:-tailored_cv}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-tailored_cv} -d ${POSTGRES_DB:-tailored_cv}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,6 +39,7 @@ services:
       INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
       INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
       INITIAL_USER_USERNAME: ${INITIAL_USER_USERNAME:-}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
     depends_on:
       postgres:
         condition: service_healthy

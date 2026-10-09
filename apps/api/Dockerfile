@@ -1,5 +1,5 @@
 FROM node:24-alpine AS base
-RUN apk add --no-cache libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl wget
 RUN corepack enable && corepack prepare pnpm@12.9.1 --activate
 
 FROM base AS pruner
@@ -25,9 +25,10 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
 COPY --from=installer --chown=nestjs:nodejs /app .
+COPY --chown=nestjs:nodejs apps/api/docker-entrypoint.sh ./apps/api/docker-entrypoint.sh
 
 USER nestjs
 
 EXPOSE 3001
 
-CMD ["node", "apps/api/dist/main.js"]
+CMD ["sh", "apps/api/docker-entrypoint.sh"]

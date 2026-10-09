@@ -48,6 +48,7 @@ The API follows NestJS standard modular design patterns with separation of conce
 ### Diagnostics
 
 - `GET /health` — Simple ping endpoint
+- `GET /health/ready` — Readiness probe that verifies PostgreSQL connectivity
 - `GET /health?detailed=true` — Deep probe including database latency check
 
 ---
@@ -71,8 +72,10 @@ INITIAL_USER_USERNAME=admin
 GEMINI_API_KEY=your_gemini_api_key
 
 # Networking
-PORT=3001
+API_PORT=3001
 CORS_ORIGIN=http://localhost:3000
+DB_POOL_MAX=10
+RUN_MIGRATIONS=true
 ```
 
 ---

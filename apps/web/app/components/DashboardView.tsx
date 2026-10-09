@@ -20,18 +20,22 @@ import styles from "../page.module.scss";
 export function DashboardView() {
   const [applications, setApplications] = useState<JobApplicationDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  async function loadData() {
+    setIsLoading(true);
+    setHasError(false);
+    try {
+      const response = await api.getApplications({ limit: 100 });
+      setApplications(response.data);
+    } catch {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const apps = await api.getApplications();
-        setApplications(apps);
-      } catch (error) {
-        void error;
-      } finally {
-        setIsLoading(false);
-      }
-    }
     loadData();
   }, []);
 
@@ -135,7 +139,22 @@ export function DashboardView() {
           )}
         </div>
 
-        {applications.length === 0 && !isLoading ? (
+        {hasError ? (
+          <div className={styles.emptyState} role="alert">
+            <div className={styles.emptyIcon}>
+              <Briefcase size={28} />
+            </div>
+            <h3>Não foi possível carregar as candidaturas</h3>
+            <p>Tente novamente. Seus dados não foram alterados.</p>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={loadData}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : applications.length === 0 && !isLoading ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
               <Briefcase size={28} />

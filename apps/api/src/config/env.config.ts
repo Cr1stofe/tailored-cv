@@ -9,6 +9,7 @@ export interface EnvironmentVariables {
   INITIAL_USER_PASSWORD?: string;
   INITIAL_USER_NAME?: string;
   INITIAL_USER_USERNAME?: string;
+  DB_POOL_MAX?: number;
 }
 
 export const envConfig = (): EnvironmentVariables => ({
@@ -24,4 +25,5 @@ export const envConfig = (): EnvironmentVariables => ({
   INITIAL_USER_PASSWORD: process.env["INITIAL_USER_PASSWORD"],
   INITIAL_USER_NAME: process.env["INITIAL_USER_NAME"],
   INITIAL_USER_USERNAME: process.env["INITIAL_USER_USERNAME"],
+  DB_POOL_MAX: parseInt(process.env["DB_POOL_MAX"] || "10", 10),
 });

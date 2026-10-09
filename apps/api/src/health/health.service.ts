@@ -14,7 +14,7 @@ export class HealthService {
   async check(detailed = false): Promise<HealthResponseDto> {
     if (!detailed) {
       return {
-        status: "ok",
+        status: (await this.prisma.isHealthy()) ? "ok" : "error",
         service: "tailored-cv-api",
       };
     }
@@ -30,6 +30,16 @@ export class HealthService {
       timestamp: new Date().toISOString(),
       database: isDbHealthy ? "connected" : "disconnected",
       ai: aiStatus,
+    };
+  }
+
+  async checkReadiness(): Promise<HealthResponseDto> {
+    const isDbHealthy = await this.prisma.isHealthy();
+    return {
+      status: isDbHealthy ? "ok" : "error",
+      service: "tailored-cv-api",
+      timestamp: new Date().toISOString(),
+      database: isDbHealthy ? "connected" : "disconnected",
     };
   }
 

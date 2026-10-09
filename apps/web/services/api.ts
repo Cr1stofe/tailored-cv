@@ -5,6 +5,8 @@ import {
   JobAnalysisDto,
   ApplicationStatus,
   SupportedLanguage,
+  PaginatedResult,
+  JobApplicationFiltersDto,
 } from "@tailored-cv/types";
 import { CreateJobApplicationInput } from "@tailored-cv/validation";
 
@@ -74,7 +76,24 @@ export const api = {
       englishCvUpdatedAt: string | null;
     }>("/profile/english"),
 
-  getApplications: () => request<JobApplicationDto[]>("/job-applications"),
+  getApplications: (params?: JobApplicationFiltersDto) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.search?.trim()) query.set("search", params.search.trim());
+    if (params?.status && (params.status as string) !== "ALL") {
+      query.set("status", params.status);
+    }
+    if (params?.stack && params.stack !== "ALL") {
+      query.set("stack", params.stack);
+    }
+    if (params?.sortBy) query.set("sortBy", params.sortBy);
+
+    const queryString = query.toString();
+    return request<PaginatedResult<JobApplicationDto>>(
+      `/job-applications${queryString ? `?${queryString}` : ""}`,
+    );
+  },
   getApplicationById: (id: string) =>
     request<JobApplicationDto>(`/job-applications/${id}`),
   createApplication: (data: CreateJobApplicationInput) =>
@@ -103,10 +122,12 @@ export const api = {
     }),
   getTailoredResume: (id: string) =>
     request<TailoredResumeDto>(`/job-applications/${id}/tailored-resume`),
-  updateTailoredResume: (id: string, data: Partial<TailoredResumeDto>) =>
+  updateTailoredResume: (
+    id: string,
+    data: Partial<TailoredResumeDto> & { resumeId?: string },
+  ) =>
     request<TailoredResumeDto>(`/job-applications/${id}/tailored-resume`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 };
-

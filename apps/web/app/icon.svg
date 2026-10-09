@@ -14,24 +14,19 @@
     </linearGradient>
   </defs>
 
-  <!-- Background Base com borda fina -->
   <rect width="64" height="64" rx="14" fill="url(#bgGrad)" />
   <rect width="62" height="62" x="1" y="1" rx="13" fill="none" stroke="url(#accentGrad)" stroke-width="1.5" stroke-opacity="0.35" />
 
-  <!-- Folha de Currículo estilizada -->
   <path d="M18 14 C18 12.895 18.895 12 20 12 L38 12 L46 20 L46 50 C46 51.105 45.105 52 44 52 L20 52 C18.895 52 18 51.105 18 50 Z" fill="url(#sheetGrad)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.4))" />
-  
-  <!-- Dobra da página -->
+
   <path d="M38 12 L38 20 L46 20 Z" fill="#cbd5e1" opacity="0.9" />
 
-  <!-- Linhas do currículo -->
   <rect x="23" y="24" width="12" height="2.5" rx="1.25" fill="#3b82f6" />
   <rect x="23" y="30" width="18" height="2" rx="1" fill="#64748b" />
   <rect x="23" y="35" width="18" height="2" rx="1" fill="#94a3b8" />
   <rect x="23" y="40" width="14" height="2" rx="1" fill="#94a3b8" />
   <rect x="23" y="45" width="10" height="2" rx="1" fill="#94a3b8" />
 
-  <!-- Sparkle de IA com gradiente -->
   <path d="M48 30 C48 34 52 35 52 35 C52 35 48 36 48 40 C48 36 44 35 44 35 C44 35 48 34 48 30 Z" fill="url(#accentGrad)" />
   <circle cx="53" cy="28" r="1.5" fill="#38bdf8" />
 </svg>
