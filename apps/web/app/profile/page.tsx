@@ -13,6 +13,7 @@ import {
   CertificationDto,
 } from "@tailored-cv/types";
 import { MasterResumeModal } from "@/components/MasterResumeModal/MasterResumeModal";
+import { printResume } from "@/lib/print-resume";
 import { MasterResumeBanner } from "./components/MasterResumeBanner";
 import { PersonalInfoCard } from "./components/PersonalInfoCard";
 import { SkillsCard } from "./components/SkillsCard";
@@ -76,7 +77,11 @@ export default function ProfilePage() {
     setActiveResumeLang(lang);
     setIsMasterResumeOpen(true);
     setTimeout(() => {
-      window.print();
+      printResume({
+        fullName: profile?.fullName,
+        language: lang,
+        isMaster: true,
+      });
     }, 150);
   };
 

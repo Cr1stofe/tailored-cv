@@ -12,6 +12,7 @@ import {
   MasterProfileDto,
 } from "@tailored-cv/types";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
+import { printResume } from "@/lib/print-resume";
 import { ApplicationTopBar } from "./components/ApplicationTopBar";
 import { JobDescriptionTab } from "./components/JobDescriptionTab";
 import { JobAnalysisTab } from "./components/JobAnalysisTab";
@@ -168,7 +169,13 @@ export default function ApplicationDetailPage({
   const handlePrint = () => {
     setActiveTab("resume");
     setTimeout(() => {
-      window.print();
+      printResume({
+        fullName: profile?.fullName,
+        position: application?.position,
+        company: application?.company,
+        language: tailoredResume?.language || application?.targetLanguage || "PT",
+        isMaster: false,
+      });
     }, 150);
   };
 
