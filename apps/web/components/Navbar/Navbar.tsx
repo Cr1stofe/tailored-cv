@@ -71,6 +71,8 @@ export function Navbar() {
                 href="/"
                 className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
                 title="Dashboard"
+                aria-label="Dashboard"
+                aria-current={pathname === "/" ? "page" : undefined}
               >
                 <FileText size={16} />
                 <span className={styles.navText}>Dashboard</span>
@@ -80,6 +82,10 @@ export function Navbar() {
                 href="/profile"
                 className={`${styles.navLink} ${pathname.startsWith("/profile") ? styles.active : ""}`}
                 title="Master Profile"
+                aria-label="Perfil"
+                aria-current={
+                  pathname.startsWith("/profile") ? "page" : undefined
+                }
               >
                 <User size={16} />
                 <span className={styles.navText}>Perfil</span>
@@ -89,6 +95,8 @@ export function Navbar() {
                 href="/applications"
                 className={`${styles.navLink} ${pathname === "/applications" ? styles.active : ""}`}
                 title="Candidaturas"
+                aria-label="Candidaturas"
+                aria-current={pathname === "/applications" ? "page" : undefined}
               >
                 <Briefcase size={16} />
                 <span className={styles.navText}>Vagas</span>
@@ -98,6 +106,7 @@ export function Navbar() {
                 href="/applications/new"
                 className={styles.newButton}
                 title="Nova Vaga"
+                aria-label="Nova candidatura"
               >
                 <Plus size={16} />
                 <span className={styles.newButtonText}>Nova Vaga</span>

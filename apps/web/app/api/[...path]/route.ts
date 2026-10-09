@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 const INTERNAL_API_URL =
   process.env["INTERNAL_API_URL"] || "http://localhost:3001";
+const UPSTREAM_TIMEOUT_MS = 30_000;
+
+export const dynamic = "force-dynamic";
 
 async function forwardRequest(
   req: NextRequest,
@@ -27,6 +30,8 @@ async function forwardRequest(
   if (authorization) {
     headers.set("authorization", authorization);
   }
+  const accept = req.headers.get("accept");
+  if (accept) headers.set("accept", accept);
 
   let body: BodyInit | undefined;
   if (!["GET", "HEAD"].includes(req.method)) {
@@ -37,11 +42,14 @@ async function forwardRequest(
   }
 
   try {
+    const signal = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
     const upstreamResponse = await fetch(targetUrl, {
       method: req.method,
       headers,
       body,
       cache: "no-store",
+      redirect: "manual",
+      signal,
     });
 
     const responseData = await upstreamResponse.text();
@@ -80,7 +88,10 @@ async function forwardRequest(
       {
         error: {
           code: 502,
-          message: `Falha ao conectar com o serviço interno: ${message}`,
+          message:
+            process.env.NODE_ENV === "production"
+              ? "Não foi possível conectar ao serviço interno."
+              : `Falha ao conectar com o serviço interno: ${message}`,
         },
       },
       { status: 502 },

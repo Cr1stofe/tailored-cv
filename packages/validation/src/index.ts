@@ -17,10 +17,6 @@ export const applicationStatusSchema = z.enum([
   "DRAFT",
   "ANALYZED",
   "TAILORED",
-  "APPLIED",
-  "INTERVIEWING",
-  "REJECTED",
-  "OFFER",
 ]);
 
 export const skillSchema = z.object({
@@ -103,6 +99,14 @@ export const masterProfileSchema = z.object({
 
 export const supportedLanguageSchema = z.enum(["PT", "EN"]);
 
+export const tailorResumeRequestSchema = z.object({
+  targetLanguage: supportedLanguageSchema.optional(),
+});
+
+export const updateJobApplicationStatusSchema = z.object({
+  status: applicationStatusSchema,
+});
+
 export const createJobApplicationSchema = z.object({
   company: z.string().min(1, "Nome da empresa é obrigatório").trim(),
   position: z.string().min(1, "Cargo é obrigatório").trim(),
@@ -152,6 +156,21 @@ export const tailoredProjectItemSchema = z.object({
   technologies: z.array(z.string()),
 });
 
+export const tailoredResumeFormSchema = z.object({
+  resumeId: z.string().uuid().optional(),
+  targetedHeadline: z
+    .string()
+    .min(3, "Headline deve ter no mínimo 3 caracteres")
+    .nullable()
+    .optional(),
+  reframedSummary: z
+    .string()
+    .min(10, "Resumo profissional deve ter no mínimo 10 caracteres"),
+  highlightedSkills: z.array(z.string().trim().min(1)),
+  tailoredExperiences: z.array(tailoredExperienceItemSchema),
+  tailoredProjects: z.array(tailoredProjectItemSchema).nullable().optional(),
+});
+
 export const tailoredResumeOutputSchema = z.object({
   title: z.string().min(1),
   language: supportedLanguageSchema.optional().default("PT"),
@@ -162,6 +181,92 @@ export const tailoredResumeOutputSchema = z.object({
   tailoredProjects: z.array(tailoredProjectItemSchema).nullable().optional(),
 });
 
+export function sanitizeHeadline(headline?: string | null): string {
+  if (!headline) return "";
+  return headline
+    .replace(
+      /\b(senior|sênior|sr\.?|pleno|pl\.?|junior|júnior|jr\.?|mid-level|mid|lead|staff|principal|especialista)\b\s*[-–—/]?\s*/gi,
+      "",
+    )
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[-–—|/]\s*/, "")
+    .trim();
+}
+
+export function formatResumeDate(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  const trimmed = dateStr
+    .trim()
+    .replace(/\s*\((conclu[íi]do|concluded|finished|atual|current)\)/gi, "")
+    .trim();
+  const isoMatch = trimmed.match(
+    /(?:^|\D)(\d{4})[-/.](\d{1,2})(?:[-/.]\d{1,2})?(?:$|\D)/,
+  );
+  if (isoMatch && isoMatch[1] && isoMatch[2]) {
+    const year = isoMatch[1];
+    const month = isoMatch[2];
+    return `${month.padStart(2, "0")}/${year}`;
+  }
+  return trimmed;
+}
+
+export function normalizePeriod(period?: string | null, isEn = false): string {
+  if (!period) return "";
+  let clean = period
+    .trim()
+    .replace(/\s*\((conclu[íi]do|concluded|finished|atual|current)\)/gi, "")
+    .trim();
+
+  clean = clean.replace(/\b(\d{4})[-/.](\d{1,2})\b/g, (_match, y, m) => {
+    return `${m.padStart(2, "0")}/${y}`;
+  });
+
+  clean = clean.replace(/\s+(até|ate|to)\s+/gi, " – ");
+
+  clean = clean.replace(/\s+[-–—]\s+/g, " – ");
+
+  if (isEn) {
+    clean = clean.replace(/\b(presente|atual)\b/gi, "Present");
+  } else {
+    clean = clean.replace(/\b(present|current)\b/gi, "Presente");
+  }
+
+  return clean;
+}
+
+/** Translate generic descriptors while preserving product and proper names. */
+export function localizeResumeProjectName(
+  name?: string | null,
+  isEn = false,
+): string {
+  if (!name) return "";
+
+  const replacements: Array<[RegExp, string]> = isEn
+    ? [
+        [
+          /\bplataforma de ensino full stack\b/gi,
+          "Full Stack E-Learning Platform",
+        ],
+        [/\bplataforma de ensino\b/gi, "E-Learning Platform"],
+        [/\bplataforma educacional\b/gi, "Educational Platform"],
+        [/\baplicação web\b/gi, "Web Application"],
+      ]
+    : [
+        [
+          /\bfull stack e-learning platform\b/gi,
+          "Plataforma de ensino Full Stack",
+        ],
+        [/\be-learning platform\b/gi, "Plataforma de ensino"],
+        [/\beducational platform\b/gi, "Plataforma educacional"],
+        [/\bweb application\b/gi, "Aplicação web"],
+      ];
+
+  return replacements.reduce(
+    (result, [pattern, replacement]) => result.replace(pattern, replacement),
+    name.trim(),
+  );
+}
+
 export type HealthCheck = z.infer<typeof healthCheckSchema>;
 export type MasterProfileInput = z.infer<typeof masterProfileSchema>;
 export type CreateJobApplicationInput = z.infer<
@@ -169,4 +274,4 @@ export type CreateJobApplicationInput = z.infer<
 >;
 export type JobAnalysisOutput = z.infer<typeof jobAnalysisOutputSchema>;
 export type TailoredResumeOutput = z.infer<typeof tailoredResumeOutputSchema>;
-
+export type TailoredResumeFormInput = z.infer<typeof tailoredResumeFormSchema>;

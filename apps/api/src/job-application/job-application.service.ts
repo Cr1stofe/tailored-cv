@@ -9,8 +9,14 @@ import {
   TailoredExperienceItem,
   TailoredProjectItem,
   SupportedLanguage,
+  PaginatedResult,
+  JobApplicationFiltersDto,
 } from "@tailored-cv/types";
-import { CreateJobApplicationInput } from "@tailored-cv/validation";
+import {
+  CreateJobApplicationInput,
+  localizeResumeProjectName,
+  sanitizeHeadline,
+} from "@tailored-cv/validation";
 import { Prisma } from "@prisma/client";
 
 @Injectable()
@@ -21,16 +27,117 @@ export class JobApplicationService {
     private readonly aiService: AIService,
   ) {}
 
-  async findAll(): Promise<JobApplicationDto[]> {
-    const list = await this.prisma.jobApplication.findMany({
-      include: {
-        jobAnalysis: true,
-        tailoredResumes: { orderBy: { version: "desc" }, take: 1 },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  async findAll(
+    filters?: JobApplicationFiltersDto,
+  ): Promise<PaginatedResult<JobApplicationDto>> {
+    const page = Math.max(1, Number(filters?.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(filters?.limit) || 12));
+    const skip = (page - 1) * limit;
 
-    return list.map((item) => this.mapApplication(item));
+    const where: Prisma.JobApplicationWhereInput = {};
+
+    if (filters?.status && (filters.status as string) !== "ALL") {
+      where.status = filters.status;
+    }
+
+    const conditions: Prisma.JobApplicationWhereInput[] = [];
+
+    if (filters?.search?.trim()) {
+      const search = filters.search.trim();
+      conditions.push({
+        OR: [
+          { position: { contains: search, mode: "insensitive" } },
+          { company: { contains: search, mode: "insensitive" } },
+          { location: { contains: search, mode: "insensitive" } },
+          { jobDescription: { contains: search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (filters?.stack && filters.stack !== "ALL") {
+      const stackKeywords: Record<string, string[]> = {
+        FULLSTACK: ["full stack", "fullstack", "full-stack"],
+        FRONTEND: [
+          "frontend",
+          "front-end",
+          "react",
+          "next.js",
+          "vue",
+          "angular",
+        ],
+        BACKEND: [
+          "backend",
+          "back-end",
+          "node",
+          "nestjs",
+          "java",
+          "python",
+          "golang",
+          "c#",
+        ],
+        MOBILE: ["mobile", "flutter", "react native", "ios", "android"],
+        DEVOPS: ["devops", "cloud", "aws", "docker", "kubernetes"],
+      };
+
+      const keywords = stackKeywords[filters.stack];
+      if (keywords) {
+        conditions.push({
+          OR: keywords.flatMap((kw) => [
+            { position: { contains: kw, mode: "insensitive" } },
+            { jobDescription: { contains: kw, mode: "insensitive" } },
+          ]),
+        });
+      }
+    }
+
+    if (conditions.length > 0) {
+      where.AND = conditions;
+    }
+
+    let orderBy: Prisma.JobApplicationOrderByWithRelationInput;
+
+    switch (filters?.sortBy) {
+      case "oldest":
+        orderBy = { createdAt: "asc" };
+        break;
+      case "company_asc":
+        orderBy = { company: "asc" };
+        break;
+      case "match_desc":
+        orderBy = { jobAnalysis: { matchScore: "desc" } };
+        break;
+      case "match_asc":
+        orderBy = { jobAnalysis: { matchScore: "asc" } };
+        break;
+      case "newest":
+      default:
+        orderBy = { createdAt: "desc" };
+        break;
+    }
+
+    const [list, total] = await Promise.all([
+      this.prisma.jobApplication.findMany({
+        where,
+        include: {
+          jobAnalysis: true,
+          tailoredResumes: { orderBy: { version: "desc" }, take: 1 },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.jobApplication.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return {
+      data: list.map((item) => this.mapApplication(item)),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async findById(id: string): Promise<JobApplicationDto> {
@@ -156,6 +263,9 @@ export class JobApplicationService {
       company: application.company,
       position: application.position,
       jobDescription: application.jobDescription,
+      // PT is the canonical source of facts for both languages. The model
+      // translates the selected text, but must never receive a second profile
+      // whose projects/experiences can drift from the original.
       masterProfile,
       jobAnalysis: application.jobAnalysis || undefined,
       targetLanguage,
@@ -171,7 +281,7 @@ export class JobApplicationService {
         version: existingCount + 1,
         title: tailorOutput.title,
         language: targetLanguage,
-        targetedHeadline: tailorOutput.targetedHeadline,
+        targetedHeadline: sanitizeHeadline(tailorOutput.targetedHeadline),
         reframedSummary: tailorOutput.reframedSummary,
         highlightedSkills: tailorOutput.highlightedSkills,
         tailoredExperiences:
@@ -184,7 +294,10 @@ export class JobApplicationService {
 
     await this.prisma.jobApplication.update({
       where: { id },
-      data: { status: "TAILORED" },
+      data: {
+        status: "TAILORED",
+        targetLanguage,
+      },
     });
 
     return {
@@ -198,8 +311,10 @@ export class JobApplicationService {
       highlightedSkills: createdResume.highlightedSkills,
       tailoredExperiences:
         createdResume.tailoredExperiences as unknown as TailoredExperienceItem[],
-      tailoredProjects: createdResume.tailoredProjects as unknown as
-        TailoredProjectItem[] | null,
+      tailoredProjects: this.mapTailoredProjects(
+        createdResume.tailoredProjects,
+        targetLanguage,
+      ),
       createdAt: createdResume.createdAt.toISOString(),
       updatedAt: createdResume.updatedAt.toISOString(),
     };
@@ -228,8 +343,10 @@ export class JobApplicationService {
       highlightedSkills: resume.highlightedSkills,
       tailoredExperiences:
         resume.tailoredExperiences as unknown as TailoredExperienceItem[],
-      tailoredProjects: resume.tailoredProjects as unknown as
-        TailoredProjectItem[] | null,
+      tailoredProjects: this.mapTailoredProjects(
+        resume.tailoredProjects,
+        resume.language,
+      ),
       createdAt: resume.createdAt.toISOString(),
       updatedAt: resume.updatedAt.toISOString(),
     };
@@ -238,6 +355,7 @@ export class JobApplicationService {
   async updateTailoredResume(
     applicationId: string,
     data: {
+      resumeId?: string;
       targetedHeadline?: string | null;
       reframedSummary?: string;
       highlightedSkills?: string[];
@@ -246,7 +364,10 @@ export class JobApplicationService {
     },
   ): Promise<TailoredResumeDto> {
     const latest = await this.prisma.tailoredResume.findFirst({
-      where: { applicationId },
+      where: {
+        applicationId,
+        ...(data.resumeId ? { id: data.resumeId } : {}),
+      },
       orderBy: { version: "desc" },
     });
 
@@ -297,11 +418,35 @@ export class JobApplicationService {
       highlightedSkills: updated.highlightedSkills,
       tailoredExperiences:
         updated.tailoredExperiences as unknown as TailoredExperienceItem[],
-      tailoredProjects: updated.tailoredProjects as unknown as
-        TailoredProjectItem[] | null,
+      tailoredProjects: this.mapTailoredProjects(
+        updated.tailoredProjects,
+        updated.language,
+      ),
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     };
+  }
+
+  private mapTailoredProjects(
+    value: Prisma.JsonValue | null,
+    language?: string,
+  ): TailoredProjectItem[] | null {
+    if (!Array.isArray(value)) return null;
+    const isEnglish = language === "EN";
+
+    return value.map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return item;
+      }
+      const project = item as Prisma.JsonObject;
+      return {
+        ...project,
+        name:
+          typeof project.name === "string"
+            ? localizeResumeProjectName(project.name, isEnglish)
+            : project.name,
+      };
+    }) as unknown as TailoredProjectItem[];
   }
 
   private mapApplication(item: {
@@ -388,8 +533,10 @@ export class JobApplicationService {
         highlightedSkills: r.highlightedSkills,
         tailoredExperiences:
           r.tailoredExperiences as unknown as TailoredExperienceItem[],
-        tailoredProjects: r.tailoredProjects as unknown as
-          TailoredProjectItem[] | null,
+        tailoredProjects: this.mapTailoredProjects(
+          r.tailoredProjects,
+          r.language,
+        ),
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
       })),

@@ -41,4 +41,10 @@ describe("HealthService", () => {
     expect(response.database).toBe("connected");
     expect(response.timestamp).toBeDefined();
   });
+
+  it("should report database readiness independently from the AI provider", async () => {
+    const response = await healthService.checkReadiness();
+    expect(response.status).toBe("ok");
+    expect(response.database).toBe("connected");
+  });
 });

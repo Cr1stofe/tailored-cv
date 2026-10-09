@@ -1,0 +1,62 @@
+.atsSection {
+  margin-bottom: 1.15rem;
+
+  @media screen and (max-width: 768px) {
+    margin-bottom: 1rem;
+  }
+}
+
+.atsSectionTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #000000;
+  border-bottom: 1px solid #000000;
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.45rem;
+}
+
+.atsItem {
+  margin-bottom: 0.65rem;
+  page-break-inside: avoid;
+}
+
+.atsItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+
+  @media screen and (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+}
+
+.atsItemRole {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.atsItemCompany {
+  font-weight: 600;
+  color: #222222;
+}
+
+.atsItemPeriod {
+  font-size: 0.8125rem;
+  color: #333333;
+  font-weight: 500;
+}
+
+.atsCertificationsText {
+  font-size: 0.84rem;
+  color: #111111;
+  line-height: 1.5;
+
+  p {
+    margin: 0;
+  }
+}

@@ -13,6 +13,12 @@ import { LoginDto } from "./dto/login.dto";
 @Injectable()
 export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
+  private readonly failedLogins = new Map<
+    string,
+    { count: number; blockedUntil: number }
+  >();
+  private readonly maxLoginAttempts = 5;
+  private readonly loginWindowMs = 15 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -60,16 +66,8 @@ export class AuthService implements OnModuleInit {
           `Usuário inicial [${email}] provisionado com sucesso (${name} / @${username}).`,
         );
       } else {
-        await this.prisma.user.update({
-          where: { email },
-          data: {
-            password: hashedPassword,
-            name,
-            username,
-          },
-        });
         this.logger.log(
-          `Usuário [${email}] atualizado com sucesso (${name} / @${username}).`,
+          `Usuário [${email}] já existe; credenciais existentes preservadas.`,
         );
       }
     } catch (err) {
@@ -80,11 +78,22 @@ export class AuthService implements OnModuleInit {
   }
 
   async login(dto: LoginDto, ip: string, ua: string) {
+    const email = dto.email.toLowerCase().trim();
+    const key = `${ip}:${email}`;
+    const attempt = this.failedLogins.get(key);
+    if (attempt && attempt.blockedUntil > Date.now()) {
+      throw new HttpException(
+        "Muitas tentativas de login. Tente novamente em alguns minutos.",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase().trim() },
+      where: { email },
     });
 
     if (!user) {
+      this.registerFailedLogin(key);
       throw new HttpException(
         { title: "email ou senha incorretos" },
         HttpStatus.UNAUTHORIZED,
@@ -97,11 +106,14 @@ export class AuthService implements OnModuleInit {
     );
 
     if (!isPasswordValid) {
+      this.registerFailedLogin(key);
       throw new HttpException(
         { title: "email ou senha incorretos" },
         HttpStatus.UNAUTHORIZED,
       );
     }
+
+    this.failedLogins.delete(key);
 
     const { sid, maxAgeSec } = await this.sessionService.create({
       userId: user.id,
@@ -120,5 +132,17 @@ export class AuthService implements OnModuleInit {
         email: user.email,
       },
     };
+  }
+
+  private registerFailedLogin(key: string): void {
+    const current = this.failedLogins.get(key);
+    const count = (current?.count || 0) + 1;
+    this.failedLogins.set(key, {
+      count,
+      blockedUntil:
+        count >= this.maxLoginAttempts
+          ? Date.now() + this.loginWindowMs
+          : current?.blockedUntil || 0,
+    });
   }
 }

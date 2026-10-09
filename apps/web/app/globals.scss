@@ -17,6 +17,24 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  line-height: 1.5;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(56, 189, 248, 0.75);
+  outline-offset: 3px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
@@ -101,6 +119,22 @@ textarea {
     box-shadow: none !important;
     border: none !important;
     page-break-inside: auto;
+  }
+
+  .atsSectionTitle {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .atsItem,
+  .atsHeader {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .atsBullets li {
+    orphans: 2;
+    widows: 2;
   }
 
   @page {

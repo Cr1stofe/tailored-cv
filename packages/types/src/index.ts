@@ -9,14 +9,7 @@ export type Environment = "development" | "test" | "production";
 
 export type SkillCategory = "PROFESSIONAL" | "HANDS_ON" | "FAMILIAR";
 
-export type ApplicationStatus =
-  | "DRAFT"
-  | "ANALYZED"
-  | "TAILORED"
-  | "APPLIED"
-  | "INTERVIEWING"
-  | "REJECTED"
-  | "OFFER";
+export type ApplicationStatus = "DRAFT" | "ANALYZED" | "TAILORED";
 
 export interface SkillDto {
   id?: string;
@@ -154,6 +147,26 @@ export interface JobApplicationDto {
   updatedAt: string;
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export type JobApplicationSortBy =
+  "newest" | "oldest" | "match_desc" | "match_asc" | "company_asc";
+
+export interface JobApplicationFiltersDto {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: ApplicationStatus;
+  stack?: string;
+  sortBy?: JobApplicationSortBy;
+}
+
 export interface JobAnalysisInput {
   jobDescription: string;
   company: string;
@@ -199,4 +212,3 @@ export interface AIProvider {
   ): Promise<MasterProfileDto>;
   checkHealth?(): Promise<AIHealthStatus>;
 }
-

@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Put,
+  Query,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { JobApplicationService } from "./job-application.service";
 import type { CreateJobApplicationInput } from "@tailored-cv/validation";
@@ -14,62 +16,78 @@ import type {
   ApplicationStatus,
   TailoredResumeDto,
   SupportedLanguage,
+  JobApplicationFiltersDto,
 } from "@tailored-cv/types";
+import {
+  createJobApplicationSchema,
+  tailorResumeRequestSchema,
+  tailoredResumeFormSchema,
+  updateJobApplicationStatusSchema,
+} from "@tailored-cv/validation";
+import { ZodValidationPipe } from "../common/pipes";
 
 @Controller("job-applications")
 export class JobApplicationController {
   constructor(private readonly jobApplicationService: JobApplicationService) {}
 
   @Get()
-  async findAll() {
-    return this.jobApplicationService.findAll();
+  async findAll(@Query() query: JobApplicationFiltersDto) {
+    return this.jobApplicationService.findAll(query);
   }
 
   @Post()
-  async create(@Body() body: CreateJobApplicationInput) {
+  async create(
+    @Body(new ZodValidationPipe(createJobApplicationSchema))
+    body: CreateJobApplicationInput,
+  ) {
     return this.jobApplicationService.create(body);
   }
 
   @Get(":id")
-  async findById(@Param("id") id: string) {
+  async findById(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.jobApplicationService.findById(id);
   }
 
   @Delete(":id")
-  async delete(@Param("id") id: string) {
+  async delete(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.jobApplicationService.delete(id);
   }
 
   @Patch(":id/status")
   async updateStatus(
-    @Param("id") id: string,
-    @Body("status") status: ApplicationStatus,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(updateJobApplicationStatusSchema))
+    body: { status: ApplicationStatus },
   ) {
-    return this.jobApplicationService.updateStatus(id, status);
+    return this.jobApplicationService.updateStatus(id, body.status);
   }
 
   @Post(":id/analyze")
-  async analyze(@Param("id") id: string) {
+  async analyze(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.jobApplicationService.analyze(id);
   }
 
   @Post(":id/tailor")
   async tailor(
-    @Param("id") id: string,
-    @Body("targetLanguage") targetLanguage?: SupportedLanguage,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(tailorResumeRequestSchema))
+    body: { targetLanguage?: SupportedLanguage },
   ) {
-    return this.jobApplicationService.tailor(id, { targetLanguage });
+    return this.jobApplicationService.tailor(id, {
+      targetLanguage: body.targetLanguage,
+    });
   }
 
   @Get(":id/tailored-resume")
-  async getTailoredResume(@Param("id") id: string) {
+  async getTailoredResume(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.jobApplicationService.getTailoredResume(id);
   }
 
   @Put(":id/tailored-resume")
   async updateTailoredResume(
-    @Param("id") id: string,
-    @Body() body: Partial<TailoredResumeDto>,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(tailoredResumeFormSchema.partial()))
+    body: Partial<TailoredResumeDto> & { resumeId?: string },
   ) {
     return this.jobApplicationService.updateTailoredResume(id, body);
   }

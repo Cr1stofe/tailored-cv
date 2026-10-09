@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Post, Put } from "@nestjs/common";
 import { ProfileService } from "./profile.service";
 import type { MasterProfileDto } from "@tailored-cv/types";
+import { masterProfileSchema } from "@tailored-cv/validation";
+import { ZodValidationPipe } from "../common/pipes";
 
 @Controller("profile")
 export class ProfileController {
@@ -13,7 +15,7 @@ export class ProfileController {
 
   @Put()
   async updateProfile(
-    @Body() body: MasterProfileDto,
+    @Body(new ZodValidationPipe(masterProfileSchema)) body: MasterProfileDto,
   ): Promise<MasterProfileDto> {
     return this.profileService.updateProfile(body);
   }
@@ -37,4 +39,3 @@ export class ProfileController {
     return this.profileService.getEnglishProfile();
   }
 }
-

@@ -5,7 +5,6 @@ RUN corepack enable && corepack prepare pnpm@12.9.1 --activate
 
 WORKDIR /app
 
-# Cache package manifests
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY packages ./packages
 COPY apps/api/package.json ./apps/api/

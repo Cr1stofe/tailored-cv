@@ -1,0 +1,108 @@
+.atsHeader {
+  text-align: center;
+  margin-bottom: 1.15rem;
+  border-bottom: 1px solid #000000;
+  padding-bottom: 0.65rem;
+
+  @media screen and (max-width: 768px) {
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+.atsName {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #000000;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+
+  @media screen and (max-width: 768px) {
+    font-size: 1.35rem;
+    letter-spacing: 0;
+  }
+}
+
+.atsHeadline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 0.35rem;
+
+  @media screen and (max-width: 768px) {
+    font-size: 0.825rem;
+    line-height: 1.35;
+  }
+}
+
+.atsHeadlineInput {
+  width: 100%;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111111;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0.35rem 0.65rem;
+  text-align: center;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #ffffff;
+  }
+}
+
+.atsContacts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8125rem;
+  color: #333333;
+
+  @media screen and (max-width: 768px) {
+    font-size: 0.75rem;
+  }
+}
+
+.atsContactRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+
+  span,
+  a {
+    color: #222222;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .atsDivider {
+    color: #777777;
+    font-size: 0.75rem;
+  }
+
+  @media screen and (max-width: 640px) {
+    gap: 0.25rem 0.4rem;
+    font-size: 0.72rem;
+
+    span,
+    a {
+      word-break: break-all;
+    }
+
+    .atsDivider {
+      color: #999999;
+      font-size: 0.65rem;
+    }
+  }
+}

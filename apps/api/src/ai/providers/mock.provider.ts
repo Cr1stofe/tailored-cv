@@ -12,6 +12,8 @@ import {
   TailorResumeInput,
   JobAnalysisOutput,
   TailoredResumeOutput,
+  sanitizeHeadline,
+  formatResumeDate,
 } from "../ai.constants";
 
 export class MockProvider implements AIProvider {
@@ -84,6 +86,7 @@ export class MockProvider implements AIProvider {
       `Executing Mock Resume Tailoring for ${input.position} at ${input.company}`,
     );
 
+    const isEnglish = input.targetLanguage === "EN";
     const candidateSkills = input.masterProfile.skills.map((s) => s.name);
     const descLower = (input.jobDescription || "").toLowerCase();
 
@@ -99,13 +102,22 @@ export class MockProvider implements AIProvider {
       })
       .slice(0, 3);
 
+    const cleanRole =
+      sanitizeHeadline(input.position.replace(/\(.*?\)/g, "").trim()) ||
+      (isEnglish ? "Software Engineer" : "Engenheiro de Software");
+
     return {
-      title: `Currículo Adaptado — ${input.position} (${input.company})`,
+      title: isEnglish
+        ? `Tailored Resume — ${input.position} (${input.company})`
+        : `Currículo Adaptado — ${input.position} (${input.company})`,
       language: input.targetLanguage || "PT",
-      targetedHeadline: `${input.position} | React · Next.js · TypeScript · Node.js · NestJS`,
-      reframedSummary:
-        input.masterProfile.summary ||
-        `Desenvolvedor Full Stack com sólida experiência na entrega de soluções escaláveis em produção, com forte domínio em TypeScript, ecossistema React/Next.js e arquiteturas de backend com Node.js e PostgreSQL. Foco em alta performance, código limpo e impacto mensurável para a ${input.company}.`,
+      targetedHeadline: sanitizeHeadline(
+        `${cleanRole} | Node.js · NestJS · TypeScript · React · Next.js`,
+      ),
+      reframedSummary: isEnglish
+        ? "Results-driven Software Engineer with extensive experience delivering robust, high-performance web and mobile applications in production. Specialized in TypeScript, the React/Next.js ecosystem, and scalable Node.js architectures."
+        : input.masterProfile.summary ||
+          `Desenvolvedor Full Stack com sólida experiência na entrega de soluções escaláveis em produção, com forte domínio em TypeScript, ecossistema React/Next.js e arquiteturas de backend com Node.js e PostgreSQL. Foco em alta performance, código limpo e impacto mensurável para a ${input.company}.`,
       highlightedSkills: candidateSkills
         .filter((s) => descLower.includes(s.toLowerCase()))
         .concat(candidateSkills)
@@ -113,15 +125,26 @@ export class MockProvider implements AIProvider {
       tailoredExperiences: input.masterProfile.experiences.map((exp) => ({
         experienceId: exp.id,
         company: exp.company,
-        position: exp.position,
-        period: `${exp.startDate} – ${exp.endDate || (exp.isCurrent ? "Presente" : "")}`,
-        location: exp.location || "Remoto",
+        position: isEnglish
+          ? exp.position
+              .replace(/Desenvolvedor/gi, "Developer")
+              .replace(/Pleno/gi, "Mid-level")
+              .replace(/Sênior/gi, "Senior")
+          : exp.position,
+        period: `${formatResumeDate(exp.startDate)} – ${exp.endDate ? formatResumeDate(exp.endDate) : exp.isCurrent ? (isEnglish ? "Present" : "Presente") : ""}`,
+        location: isEnglish
+          ? exp.location?.toLowerCase().includes("remoto")
+            ? "Remote"
+            : exp.location || "Remote"
+          : exp.location || "Remoto",
         reframedHighlights: exp.highlights,
         technologies: exp.technologies,
       })),
       tailoredProjects: relevantProjects.map((proj) => ({
         projectId: proj.id,
-        name: proj.name,
+        name: isEnglish
+          ? proj.name.replace(/Plataforma de ensino/gi, "E-Learning Platform")
+          : proj.name,
         description: proj.description,
         url: proj.url || undefined,
         reframedHighlights: proj.highlights,
@@ -139,8 +162,13 @@ export class MockProvider implements AIProvider {
 
     return {
       ...profile,
+      location: profile.location
+        ? profile.location.includes("Brazil")
+          ? profile.location
+          : `${profile.location}, Brazil`
+        : profile.location,
       summary: profile.summary
-        ? "Senior Full Stack Engineer with strong expertise in building scalable, production-grade systems across React, Next.js, Node.js, and cloud infrastructure. Focused on high performance and clean architecture."
+        ? "Full Stack Engineer with strong expertise in building scalable, production-grade systems across React, Next.js, Node.js, and cloud infrastructure. Focused on high performance and clean architecture."
         : null,
       experiences: (profile.experiences || []).map((e: ExperienceDto) => ({
         ...e,
@@ -166,5 +194,3 @@ export class MockProvider implements AIProvider {
     };
   }
 }
-
-

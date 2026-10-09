@@ -10,6 +10,10 @@ import {
   AI_SYSTEM_PROMPT,
   jobAnalysisOutputSchema,
   tailoredResumeOutputSchema,
+  sanitizeHeadline,
+  formatResumeDate,
+  localizeResumeProjectName,
+  normalizePeriod,
 } from "../ai.constants";
 
 function safeParseAiJson<T>(rawText: string): T {
@@ -62,11 +66,7 @@ function safeParseAiJson<T>(rawText: string): T {
         const nextChar = cleaned[j];
 
         let isEndQuote = false;
-        if (
-          nextChar === ":" ||
-          nextChar === "}" ||
-          nextChar === "]"
-        ) {
+        if (nextChar === ":" || nextChar === "}" || nextChar === "]") {
           isEndQuote = true;
         } else if (nextChar === ",") {
           let k = j + 1;
@@ -128,6 +128,144 @@ function safeParseAiJson<T>(rawText: string): T {
   }
 }
 
+const PT_THIRD_PERSON_TO_FIRST_PERSON: Array<[RegExp, string]> = [
+  [/^Desenvolveu\b/i, "Desenvolvi"],
+  [/^Implementou\b/i, "Implementei"],
+  [/^Integrou\b/i, "Integrei"],
+  [/^Executou\b/i, "Executei"],
+  [/^Aprovou\b/i, "Aprovei"],
+  [/^Alcançou\b/i, "Alcancei"],
+  [/^Construiu\b/i, "Construí"],
+  [/^Realizou\b/i, "Realizei"],
+  [/^Configurou\b/i, "Configurei"],
+  [/^Otimizou\b/i, "Otimizei"],
+  [/^Criou\b/i, "Criei"],
+  [/^Entregou\b/i, "Entreguei"],
+  [/^Manteve\b/i, "Mantive"],
+  [/^Liderou\b/i, "Liderei"],
+  [/^Garantiu\b/i, "Garanti"],
+  [/^Reduziu\b/i, "Reduzi"],
+  [/^Melhorou\b/i, "Melhorei"],
+  [/^Aumentou\b/i, "Aumentei"],
+];
+
+function normalizePortugueseBullet(text: string): string {
+  return PT_THIRD_PERSON_TO_FIRST_PERSON.reduce(
+    (current, [pattern, replacement]) => current.replace(pattern, replacement),
+    text.trim(),
+  );
+}
+
+function replaceLanguageContamination(
+  text: string | null | undefined,
+  isEnglish: boolean,
+): string {
+  if (!text) return "";
+  return isEnglish
+    ? text
+        .replace(/\bAPIs REST\b/gi, "REST APIs")
+        .replace(/\bSessões seguras\b/gi, "secure sessions")
+    : text
+        .replace(/\bREST APIs\b/gi, "APIs REST")
+        .replace(/\bsecure cookies\b/gi, "Cookies HttpOnly");
+}
+
+function localizeTechnicalTerm(value: string, isEnglish: boolean): string {
+  return isEnglish
+    ? value.replace(/\bAPIs REST\b/gi, "REST APIs")
+    : value.replace(/\bREST APIs\b/gi, "APIs REST");
+}
+
+function removeSummaryRepetition(text: string, isEnglish: boolean): string {
+  const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+  const metricPattern =
+    /\b(?:LCP|Lighthouse|Core Web Vitals|downloads?|download|crash|crashes|100k|100,?000|1[,.]4\s*s|99\s*(?:desktop\s*)?(?:score|performance|nota|points?)|\d+%)/i;
+  const weakStandalonePattern = isEnglish
+    ? /^(?:experience|experienced)\s+with\b/i
+    : /^(?:experiência|experiente)\s+com\b/i;
+  const filtered = sentences
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => !metricPattern.test(sentence))
+    .filter((sentence) => !weakStandalonePattern.test(sentence));
+  const result = filtered
+    .join(" ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return result.length >= 45 ? result : text.trim();
+}
+
+function sanitizeGeneratedCopy(text: string, isEnglish: boolean): string {
+  const replacements: Array<[RegExp, string]> = isEnglish
+    ? [
+        [/\bproven track record\b/gi, "experience"],
+        [/\bspecialized in\b/gi, "experienced with"],
+        [/\bscalable\b/gi, "production"],
+        [/\bhigh-performance\b/gi, "production"],
+        [/\bintuitive user journeys\b/gi, "user interfaces"],
+      ]
+    : [
+        [/\bproven track record\b/gi, "experiência"],
+        [/\bespecialista em\b/gi, "experiência em"],
+        [/\bespecialista\b/gi, "profissional com experiência"],
+        [/\bescalável(is)?\b/gi, "em produção"],
+        [/\balta performance\b/gi, "produção"],
+        [/\bjornadas intuitivas\b/gi, "interfaces de usuário"],
+      ];
+  return replacements.reduce(
+    (result, [pattern, replacement]) => result.replace(pattern, replacement),
+    text.trim(),
+  );
+}
+
+function findRelevantProfileSkills(input: TailorResumeInput): string[] {
+  const jobText = [
+    input.jobDescription,
+    ...(input.jobAnalysis?.keywords || []),
+    ...(input.jobAnalysis?.requiredSkills || []),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return input.masterProfile.skills
+    .filter((skill) => jobText.includes(skill.name.toLowerCase()))
+    .map((skill) => skill.name);
+}
+
+function getHighlightedSkillCap(input: TailorResumeInput): number {
+  const signals = new Set(
+    [
+      ...(input.jobAnalysis?.keywords || []),
+      ...(input.jobAnalysis?.requiredSkills || []),
+      ...(input.jobAnalysis?.desiredSkills || []),
+    ]
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length >= 3),
+  );
+
+  if (signals.size === 0) {
+    if (input.jobDescription.length < 500) return 12;
+    if (input.jobDescription.length < 1200) return 16;
+    return 20;
+  }
+
+  if (signals.size <= 4) return 12;
+  if (signals.size <= 10) return 16;
+  return 20;
+}
+
+function ensureSummaryCoverage(
+  summary: string,
+  input: TailorResumeInput,
+  isEnglish: boolean,
+): string {
+  const relevant = findRelevantProfileSkills(input).slice(0, 5);
+  const missing = relevant
+    .filter((skill) => !summary.toLowerCase().includes(skill.toLowerCase()))
+    .slice(0, 3);
+  if (missing.length === 0) return summary;
+  const list = missing.join(isEnglish ? ", " : ", ");
+  return `${summary.trim()} ${isEnglish ? `Core technologies include ${list}.` : `Tecnologias centrais: ${list}.`}`;
+}
+
 export class GeminiProvider implements AIProvider {
   private readonly logger = new Logger(GeminiProvider.name);
   private readonly client: GoogleGenAI;
@@ -184,6 +322,7 @@ PERFIL DO CANDIDATO (MASTER PROFILE):
 Resumo: ${input.masterProfile.summary || "Não informado"}
 Competências cadastradas: ${input.masterProfile.skills.map((s) => `${s.name} (${s.category})`).join(", ")}
 Experiências: ${input.masterProfile.experiences.map((e) => `${e.position} em ${e.company} [${e.technologies.join(", ")}]`).join("; ")}
+Projetos: ${input.masterProfile.projects.map((p) => `${p.name} [${p.technologies.join(", ")}] — ${p.highlights.join("; ")}`).join("; ")}
 """
 
 Retorne EXCLUSIVAMENTE um objeto JSON válido, sem comentários, sem markdown e com todas as chaves e strings entre aspas duplas, seguindo esta estrutura:
@@ -315,20 +454,28 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem comentários, sem markdown e 
     const isEnglish = input.targetLanguage === "EN";
     const languageInstruction = isEnglish
       ? `DIRETRIZ OBRIGATÓRIA DE IDIOMA (TARGET LANGUAGE: ENGLISH):
-- O currículo gerado DEVE SER 100% EM INGLÊS TÉCNICO FLUENTE (EUA / Mercado Internacional).
+- O currículo gerado DEVE SER 100% EM INGLÊS TÉCNICO FLUENTE (EUA / Mercado Internacional). NENHUMA palavra em português deve permanecer.
 - "title" deve ser em inglês (ex: "Tailored Resume — ${input.position} (${input.company})").
-- "targetedHeadline" deve ser em inglês (ex: "Senior Full Stack Engineer | React, Node.js & Cloud Architecture").
+- "targetedHeadline" DEVE SER ESTRITAMENTE FUNCIONAL E SEM QUALQUER SENIORIDADE (ex: "Backend Engineer | Node.js, NestJS, Prisma & Clean Architecture" ou "Software Engineer | TypeScript, React & Node.js"). NUNCA inclua palavras como "Senior", "Sênior", "Pleno", "Junior", "Mid-level", "Lead", "Staff". Senioridade não agrega valor no título e distorce a realidade do perfil.
 - "reframedSummary" deve ser redigido em inglês formal, conciso e com forte impacto ATS.
+- Em "tailoredExperiences", o cargo ("position") DEVE SER TRADUZIDO para o termo padrão em inglês (ex: "Frontend Developer", "Full Stack Developer", "Backend Developer / Engineer"). NUNCA deixe "Desenvolvedor" e NUNCA adicione prefixos de senioridade.
+- Em "tailoredExperiences", a localização ("location") DEVE SER EM INGLÊS (ex: "Remote" em vez de "Remoto", "Hybrid" em vez de "Híbrido").
+- Em "tailoredExperiences", "period" DEVE ser formatado estritamente como "MM/YYYY – Present" (ex: "07/2023 – Present"). NUNCA use "YYYY-MM" e NUNCA use a palavra "até".
+- Em "tailoredProjects", "name" e "description" DEVEM SER EM INGLÊS caso o original esteja em português (ex: "LMS – Full Stack E-Learning Platform (Veltro LMS)", "LMS – Express REST API").
 - Todos os bullets ("reframedHighlights") em "tailoredExperiences" e "tailoredProjects" DEVEM SER EM INGLÊS com action verbs fortes (Developed, Engineered, Implemented, Spearheaded, Optimized, Containerized).
-- "period" deve usar "Present" para posições atuais (ex: "01/2023 - Present").
-- Princípio inegociável: Never invent. Only reframe.`
+- Princípio inegociável: Never invent. Only reframe and faithfully translate.`
       : `DIRETRIZ DE IDIOMA (TARGET LANGUAGE: PORTUGUÊS):
-- Gere o conteúdo em Português do Brasil com terminologia técnica padrão de mercado.`;
+- Gere o conteúdo em Português do Brasil com terminologia técnica padrão de mercado.
+- "targetedHeadline" DEVE SER ESTRITAMENTE FUNCIONAL E SEM QUALQUER SENIORIDADE (ex: "Desenvolvedor Frontend | React, TypeScript, SCSS Modules e Next.js" ou "Desenvolvedor Full Stack | React, Node.js e TypeScript"). NUNCA use "Senior", "Sênior", "Pleno", "Junior", "Lead".
+- Em "tailoredExperiences", "period" DEVE ser formatado estritamente como "MM/YYYY – Presente" (ex: "07/2023 – Presente") ou "MM/YYYY – MM/YYYY". NUNCA use "YYYY-MM", "(concluído)" e NUNCA use a palavra "até".
+- PESSOA E TEMPO VERBAL OBRIGATÓRIO: Use SEMPRE primeira pessoa implícita. Cargo atual (isCurrent=true): presente do indicativo ("Desenvolvo", "Implemento", "Mantenho"). Cargos anteriores: pretérito perfeito ("Desenvolvi", "Implementei", "Otimizei", "Integrei", "Estruturei"). NUNCA use terceira pessoa ("Desenvolveu", "Implementou", "Aprovou", "Integrou", "Alcançou").
+- TERMINOLOGIA PT: use "APIs REST", "Sessões seguras", "Cookies HttpOnly". NUNCA misture termos em inglês ("REST APIs", "secure cookies") no documento PT.
+- MESMO CONJUNTO DE FATOS: O PT deve conter exatamente os mesmos projetos, experiências e métricas que o EN. Apenas o idioma do texto muda.`;
 
     const prompt = `
 ${AI_SYSTEM_PROMPT}
 
-TAREFA: Reestruturar o currículo do candidato para a vaga alvo sem inventar nada.
+TAREFA: Reestruturar o currículo do candidato para a vaga alvo sem inventar absolutamente nenhum fato, número ou tecnologia.
 
 ${languageInstruction}
 
@@ -339,10 +486,10 @@ DESCRIÇÃO DA VAGA:
 ${input.jobDescription}
 """
 
-PALAVRAS-CHAVE DA ANÁLISE:
+PALAVRAS-CHAVE DA VAGA (OBRIGATÓRIAS / DESEJÁVEIS):
 ${input.jobAnalysis ? input.jobAnalysis.keywords.join(", ") : "Requisitos da descrição da vaga"}
 
-MASTER PROFILE COMPLETO (FONTE DA VERDADE):
+MASTER PROFILE COMPLETO (BANCO DE FATOS REAIS E INVIOLÁVEIS):
 """
 Nome: ${input.masterProfile.fullName}
 Resumo Original: ${input.masterProfile.summary || ""}
@@ -357,8 +504,8 @@ ${input.masterProfile.experiences
 [ID: ${e.id || "exp"}]
 Empresa: ${e.company}
 Cargo: ${e.position}
-Período: ${e.startDate} até ${e.endDate || (e.isCurrent ? "Presente" : "")}
-Localização: ${e.location || "Remoto"}
+Período: ${formatResumeDate(e.startDate)} – ${e.endDate ? formatResumeDate(e.endDate) : e.isCurrent ? (isEnglish ? "Present" : "Presente") : ""}
+Localização: ${e.location || (isEnglish ? "Remote" : "Remoto")}
 Tecnologias reais: ${e.technologies.join(", ")}
 Bullets originais:
 ${e.highlights.map((h) => `* ${h}`).join("\n")}
@@ -381,38 +528,66 @@ ${p.highlights.map((h) => `* ${h}`).join("\n")}
   .join("\n")}
 """
 
-INSTRUÇÃO ESPECÍFICA:
-1. Gere um targetedHeadline preciso (ex: "Senior Full Stack Engineer | React, Node.js & Cloud Architecture").
-2. Reframe o resumo profissional (reframedSummary), destacando os anos de experiência e pontos fortes que respondem à vaga alvo, usando apenas fatos reais.
-3. Selecione e ordene em highlightedSkills as competências que o candidato tem que mais combinam com a vaga.
-4. Para cada experiência em tailoredExperiences, mantenha a empresa, cargo, período e technologies reais, mas reescreva os bullets em "reframedHighlights" com forte orientação a impacto e alinhamento de vocabulário com a vaga, sem NUNCA inventar fatos ou números.
-5. Em tailoredProjects, selecione APENAS os 2 ou 3 projetos do candidato de maior impacto e relevância técnica para esta vaga específica. Refatore os bullets em reframedHighlights alinhando vocabulário com a vaga sem inventar fatos.
+DIRETRIZES ESTRITAS DE EXECUÇÃO:
+
+1. HEADLINE (targetedHeadline):
+   - Formato: "[Papel Técnico Funcional] | [3 a 4 tecnologias principais da vaga que o candidato domina]".
+   - PROIBIDO QUALQUER TERMO DE SENIORIDADE: NUNCA use "Senior", "Sênior", "Pleno", "Junior", "Lead", "Staff".
+   - Se o cargo da vaga não for explícito, use o cargo real mais recente do perfil; não invente um novo título.
+
+2. RESUMO PROFISSIONAL (reframedSummary):
+   - 3 a 4 linhas em prosa concisa, sem bullets.
+   - 1ª frase: cargo funcional + anos de experiência real (calculado das datas reais) + stack principal alinhada à vaga.
+   - Não repita no resumo métricas que serão apresentadas na experiência ou nos projetos. O resumo posiciona o candidato; os bullets comprovam o resultado.
+   - 2ª e 3ª frases: 2 a 3 competências técnicas centrais da vaga que o candidato domina e o tipo de solução que entrega.
+   - ZERO clichês ("proativo", "apaixonado por tecnologia", "interfaces escaláveis" sem dados de sustentação).
+
+3. COMPETÊNCIAS DESTACADAS (highlightedSkills):
+   - Selecione entre 12 e 20 tecnologias que a vaga pede ou que ajudam a comprovar aderência, conforme a amplitude dos requisitos. A ordem deve ser a relevância para a vaga.
+   - Use o nome exato da vaga quando aplicável (ex: "Next.js", "NestJS", "PostgreSQL").
+   - NUNCA inclua tecnologia que não esteja no Master Profile.
+
+4. EXPERIÊNCIA PROFISSIONAL (tailoredExperiences):
+   - Cargo: traduza para o padrão funcional (sem senioridade).
+   - Período: formato padronizado "${isEnglish ? "MM/YYYY – Present" : "MM/YYYY – Presente"}" ou "MM/YYYY – MM/YYYY".
+   - Bullets (reframedHighlights):
+     * 3 a 5 bullets para a experiência principal; 2 a 3 para as demais.
+     * Fórmula do bullet: Verbo de ação + o que foi feito + tecnologia + resultado/impacto comprovado.
+     * Comece cada bullet com verbo de ação diferente e forte (${isEnglish ? "Architected, Developed, Engineered, Optimized, Integrated, Containerized" : "Desenvolvi, Implementei, Otimizei, Integrei, Estruturei, Reduzi"}).
+     * NUNCA invente métricas fictícias.
+
+5. PROJETOS RELEVANTES (tailoredProjects):
+   - Selecione no máximo 2 a 3 projetos do candidato de maior impacto para esta vaga.
+   - Use exatamente o projectId fornecido no Master Profile e mantenha o mesmo conjunto de projetos quando o currículo for regenerado em outro idioma.
+   - No campo name, preserve marcas, produtos e nomes próprios, mas traduza descritores genéricos quando isso melhorar o idioma (ex.: "Plataforma de ensino" → "E-Learning Platform").
+   - 2 a 3 bullets por projeto, sem repetir os mesmos fatos da experiência profissional. Se um resultado já foi usado na experiência, use o projeto para explicar escopo, arquitetura ou responsabilidade técnica diferente.
+   - Mantenha URLs reais se existirem.
 
 Retorne APENAS um JSON válido seguindo estritamente este formato:
 {
   "title": "${isEnglish ? `Tailored Resume — ${input.position} (${input.company})` : `Currículo Adaptado — ${input.position} (${input.company})`}",
   "language": "${input.targetLanguage || "PT"}",
-  "targetedHeadline": "Headline estratégico profissional",
-  "reframedSummary": "Resumo profissional refinado com foco na vaga alvo",
+  "targetedHeadline": "${isEnglish ? "Backend Engineer | Node.js, NestJS, Prisma & PostgreSQL" : "Engenheiro de Software Backend | Node.js, NestJS, Prisma e PostgreSQL"}",
+  "reframedSummary": "${isEnglish ? "Frontend Developer with experience in React, TypeScript and the testing tools evidenced in the profile..." : "Desenvolvedor Frontend com experiência em React, TypeScript e as ferramentas de testes evidenciadas no perfil..."}",
   "highlightedSkills": ["skill1", "skill2", "skill3"],
   "tailoredExperiences": [
     {
       "experienceId": "id original",
-      "company": "Empresa",
-      "position": "Cargo",
-      "period": "${isEnglish ? "01/2023 - Present" : "01/2023 - Presente"}",
-      "location": "São Paulo, Brasil",
-      "reframedHighlights": ["bullet 1 refatorado", "bullet 2 refatorado"],
+      "company": "Company Name",
+      "position": "${isEnglish ? "Frontend Developer" : "Desenvolvedor Frontend"}",
+      "period": "${isEnglish ? "07/2023 – Present" : "07/2023 – Presente"}",
+      "location": "${isEnglish ? "Remote" : "Remoto"}",
+      "reframedHighlights": ["${isEnglish ? "Developed a documented solution using the technologies evidenced in the profile..." : "Desenvolvi uma solução documentada usando as tecnologias evidenciadas no perfil..."}"],
       "technologies": ["tech1", "tech2"]
     }
   ],
   "tailoredProjects": [
     {
       "projectId": "id original",
-      "name": "Nome",
-      "description": "Descrição",
+      "name": "${isEnglish ? "LMS – Full Stack E-Learning Platform (Veltro LMS)" : "LMS – Plataforma de ensino Full Stack (Veltro LMS)"}",
+      "description": "${isEnglish ? "Corporate modular educational platform with video streaming..." : "Descrição do projeto"}",
       "url": "https://...",
-      "reframedHighlights": ["bullet do projeto"],
+      "reframedHighlights": ["${isEnglish ? "Engineered modular corporate API using NestJS..." : "bullet do projeto"}"],
       "technologies": ["tech1"]
     }
   ]
@@ -423,8 +598,124 @@ Retorne APENAS um JSON válido seguindo estritamente este formato:
       const text = await this.generateWithFallback(prompt);
       const parsedJson = safeParseAiJson(text);
       const validated = tailoredResumeOutputSchema.parse(parsedJson);
+
+      const highlightedSkillCap = getHighlightedSkillCap(input);
+      const candidateSkills = new Map(
+        input.masterProfile.skills.map((skill) => [
+          skill.name.trim().toLowerCase(),
+          skill.name,
+        ]),
+      );
+      const relevantSkills = findRelevantProfileSkills(input);
+      const verifiedSkills = validated.highlightedSkills
+        .map((skill) => candidateSkills.get(skill.trim().toLowerCase()))
+        .filter((skill): skill is string => Boolean(skill));
+      const sanitizedSkills = Array.from(
+        new Set([...relevantSkills, ...verifiedSkills]),
+      )
+        .map((skill) => localizeTechnicalTerm(skill, isEnglish))
+        .slice(0, highlightedSkillCap);
+
+      if (validated.highlightedSkills.length > highlightedSkillCap) {
+        this.logger.warn(
+          `AI returned ${validated.highlightedSkills.length} highlighted skills — capped to ${highlightedSkillCap}.`,
+        );
+      }
+
+      const bannedAnnotationRe =
+        /\s*\((conclu[íi]do|concluded|present|atual)\)/gi;
+      const sourceExperiences = new Map(
+        input.masterProfile.experiences.map((experience) => [
+          experience.id,
+          experience,
+        ]),
+      );
+      const sourceProjects = new Map(
+        input.masterProfile.projects.map((project) => [project.id, project]),
+      );
+      const sanitizedExperiences = validated.tailoredExperiences.map((exp) => {
+        const source = exp.experienceId
+          ? sourceExperiences.get(exp.experienceId)
+          : undefined;
+        const bullets = exp.reframedHighlights.map((bullet) => {
+          const normalized = !isEnglish
+            ? normalizePortugueseBullet(bullet)
+            : bullet.trim();
+          return sanitizeGeneratedCopy(
+            replaceLanguageContamination(normalized, isEnglish),
+            isEnglish,
+          );
+        });
+        const period = normalizePeriod(exp.period, isEnglish)
+          .replace(bannedAnnotationRe, "")
+          .trim();
+        return {
+          ...exp,
+          company: source?.company || exp.company,
+          experienceId: source?.id || exp.experienceId,
+          technologies: (source?.technologies || exp.technologies).map((tech) =>
+            localizeTechnicalTerm(tech, isEnglish),
+          ),
+          reframedHighlights: bullets,
+          period,
+        };
+      });
+
+      const sanitizedProjects = validated.tailoredProjects?.map((project) => {
+        const source = project.projectId
+          ? sourceProjects.get(project.projectId)
+          : undefined;
+        return {
+          ...project,
+          // Preserve brands and product names, but localize generic descriptors.
+          name: localizeResumeProjectName(
+            source?.name || project.name,
+            isEnglish,
+          ),
+          url: source?.url || project.url,
+          projectId: source?.id || project.projectId,
+          technologies: (source?.technologies || project.technologies).map(
+            (tech) => localizeTechnicalTerm(tech, isEnglish),
+          ),
+          description: sanitizeGeneratedCopy(
+            replaceLanguageContamination(project.description.trim(), isEnglish),
+            isEnglish,
+          ),
+          reframedHighlights: project.reframedHighlights.map((bullet) => {
+            const normalized = !isEnglish
+              ? normalizePortugueseBullet(bullet)
+              : bullet.trim();
+            return sanitizeGeneratedCopy(
+              replaceLanguageContamination(normalized, isEnglish),
+              isEnglish,
+            );
+          }),
+        };
+      });
+
       return {
         ...validated,
+        title: replaceLanguageContamination(validated.title, isEnglish),
+        targetedHeadline: sanitizeHeadline(
+          replaceLanguageContamination(validated.targetedHeadline, isEnglish),
+        ),
+        reframedSummary: ensureSummaryCoverage(
+          removeSummaryRepetition(
+            sanitizeGeneratedCopy(
+              replaceLanguageContamination(
+                validated.reframedSummary,
+                isEnglish,
+              ),
+              isEnglish,
+            ),
+            isEnglish,
+          ),
+          input,
+          isEnglish,
+        ),
+        highlightedSkills: sanitizedSkills,
+        tailoredExperiences: sanitizedExperiences,
+        tailoredProjects: sanitizedProjects,
         language: input.targetLanguage || "PT",
       };
     } catch (error) {
@@ -452,6 +743,7 @@ PRINCÍPIO INVIOLÁVEL: "Never invent. Only reframe and faithfully translate."
 5. Traduza os bullets de cada experiência e projeto utilizando verbos de ação no passado em inglês (ex: "Engineered", "Developed", "Architected", "Implemented", "Spearheaded", "Optimized", "Refactored", "Configured", "Containerized") mantendo exatamente a essência do que o candidato realizou.
 6. Mantenha o array de competências (skills) e tecnologias originais.
 7. Traduza graus acadêmicos de formação (ex: "Bacharelado em Ciência da Computação" -> "Bachelor's Degree in Computer Science").
+8. Para a localização (location), formate no padrão internacional adicionando o país em inglês (ex: "${profile.location ? `${profile.location}, Brazil` : "City, State, Brazil"}").
 
 DIRETRIZES OBRIGATÓRIAS DE FORMATAÇÃO JSON (ESTRITAS):
 - NUNCA use aspas duplas ("...") dentro de resumos, descrições ou bullets de texto. Para citar nomes de projetos, plataformas ou termos use SEMPRE aspas simples ('...'). Exemplo: plataforma 'Ranking dos Políticos' e NUNCA plataforma "Ranking dos Políticos".
@@ -462,6 +754,7 @@ PERFIL ORIGINAL EM PORTUGUÊS:
 ${JSON.stringify(
   {
     fullName: profile.fullName,
+    location: profile.location,
     summary: profile.summary,
     skills: profile.skills,
     experiences: profile.experiences,
@@ -475,6 +768,7 @@ ${JSON.stringify(
 
 Retorne EXCLUSIVAMENTE um objeto JSON válido, sem blocos de código markdown adicionais e sem comentários, seguindo esta estrutura exata:
 {
+  "location": "${profile.location ? `${profile.location}, Brazil` : "City, State, Brazil"}",
   "summary": "Executive summary in professional English...",
   "skills": [
     { "name": "Skill Name", "category": "PROFESSIONAL" }
@@ -528,7 +822,9 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem blocos de código markdown ad
 
     try {
       const text = await this.generateWithFallback(prompt, 45000);
-      this.logger.log(`Raw Gemini English Profile translation (first 1000 chars):\n${text.slice(0, 1000)}`);
+      this.logger.log(
+        `Raw Gemini English Profile translation (first 1000 chars):\n${text.slice(0, 1000)}`,
+      );
       let parsedJson: Partial<MasterProfileDto>;
       try {
         parsedJson = safeParseAiJson<Partial<MasterProfileDto>>(text);
@@ -542,30 +838,45 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem blocos de código markdown ad
         fullName: profile.fullName,
         email: profile.email,
         phone: profile.phone,
-        location: profile.location,
+        location:
+          parsedJson.location ||
+          (profile.location
+            ? profile.location.includes("Brazil")
+              ? profile.location
+              : `${profile.location}, Brazil`
+            : profile.location),
         linkedinUrl: profile.linkedinUrl,
         githubUrl: profile.githubUrl,
         portfolioUrl: profile.portfolioUrl,
         summary: parsedJson.summary || profile.summary,
-        skills: parsedJson.skills?.length ? parsedJson.skills : profile.skills,
-        experiences: parsedJson.experiences?.length
-          ? parsedJson.experiences.map((exp, idx) => ({
-              ...exp,
-              id: profile.experiences[idx]?.id || exp.id,
-              company: exp.company || profile.experiences[idx]?.company,
-              technologies:
-                exp.technologies || profile.experiences[idx]?.technologies,
-            }))
-          : profile.experiences,
-        projects: parsedJson.projects?.length
-          ? parsedJson.projects.map((proj, idx) => ({
-              ...proj,
-              id: profile.projects[idx]?.id || proj.id,
-              url: profile.projects[idx]?.url,
-              technologies:
-                proj.technologies || profile.projects[idx]?.technologies,
-            }))
-          : profile.projects,
+        // Skills, technologies, IDs, URLs, names and array membership belong
+        // to the canonical profile; only prose is translated.
+        skills: profile.skills,
+        experiences: profile.experiences.map((source, idx) => {
+          const translated =
+            parsedJson.experiences?.find((item) => item.id === source.id) ||
+            parsedJson.experiences?.[idx];
+          return {
+            ...source,
+            ...translated,
+            id: source.id,
+            company: source.company,
+            technologies: source.technologies,
+          };
+        }),
+        projects: profile.projects.map((source, idx) => {
+          const translated =
+            parsedJson.projects?.find((item) => item.id === source.id) ||
+            parsedJson.projects?.[idx];
+          return {
+            ...source,
+            ...translated,
+            id: source.id,
+            name: source.name,
+            url: source.url,
+            technologies: source.technologies,
+          };
+        }),
         educations: parsedJson.educations?.length
           ? parsedJson.educations.map((ed, idx) => ({
               ...ed,
@@ -574,14 +885,15 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem blocos de código markdown ad
                 ed.institution || profile.educations[idx]?.institution,
             }))
           : profile.educations,
-        certifications: parsedJson.certifications?.length
-          ? parsedJson.certifications.map((c, idx) => ({
-              ...c,
-              id: profile.certifications[idx]?.id || c.id,
-              issuer: c.issuer || profile.certifications[idx]?.issuer,
-              url: profile.certifications[idx]?.url,
-            }))
-          : profile.certifications,
+        certifications: profile.certifications.map((source, idx) => ({
+          ...source,
+          ...(parsedJson.certifications?.find(
+            (item) => item.id === source.id,
+          ) || parsedJson.certifications?.[idx]),
+          id: source.id,
+          name: source.name,
+          url: source.url,
+        })),
       };
     } catch (error) {
       this.logger.error(
@@ -592,4 +904,3 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido, sem blocos de código markdown ad
     }
   }
 }
-

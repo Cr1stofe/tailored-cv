@@ -21,4 +21,9 @@ export class HealthController {
   async getAiHealth(): Promise<AIHealthStatus> {
     return this.healthService.checkAi();
   }
+
+  @Get("ready")
+  async getReadiness(): Promise<HealthResponseDto> {
+    return this.healthService.checkReadiness();
+  }
 }

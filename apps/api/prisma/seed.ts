@@ -32,7 +32,7 @@ async function main() {
 
   console.log(`Iniciando seed do perfil: ${profileData.fullName}...`);
 
-  const initialEmail = process.env.INITIAL_USER_EMAIL;
+  const initialEmail = process.env.INITIAL_USER_EMAIL?.toLowerCase().trim();
   const initialPassword = process.env.INITIAL_USER_PASSWORD;
   const initialName = process.env.INITIAL_USER_NAME || profileData.fullName;
   const initialUsername = process.env.INITIAL_USER_USERNAME || "admin";
@@ -153,11 +153,9 @@ async function main() {
     if (initialEmail && initialPassword && hashedPassword) {
       await tx.user.upsert({
         where: { email: initialEmail },
-        update: {
-          password: hashedPassword,
-          name: initialName,
-          username: initialUsername,
-        },
+        // Seeding must be safe to rerun; never rotate a production password
+        // just because a container restarted or a migration was deployed.
+        update: {},
         create: {
           email: initialEmail,
           password: hashedPassword,
@@ -170,7 +168,9 @@ async function main() {
 
   console.log("Perfil criado com sucesso sob transação atômica.");
   if (initialEmail && initialPassword) {
-    console.log(`Usuário inicial (${initialEmail}) sincronizado com sucesso.`);
+    console.log(
+      `Usuário inicial (${initialEmail}) criado se ainda não existia; credenciais existentes foram preservadas.`,
+    );
   }
 }
 

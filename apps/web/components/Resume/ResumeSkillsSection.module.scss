@@ -1,0 +1,110 @@
+.atsSection {
+  margin-bottom: 1.15rem;
+
+  @media screen and (max-width: 768px) {
+    margin-bottom: 1rem;
+  }
+}
+
+.atsSectionTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #000000;
+  border-bottom: 1px solid #000000;
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.45rem;
+}
+
+.atsSkillsText {
+  font-size: 0.84rem;
+  color: #111111;
+  line-height: 1.5;
+
+  @media screen and (max-width: 768px) {
+    font-size: 0.8rem;
+  }
+
+  p {
+    margin-bottom: 0.25rem;
+  }
+
+  strong {
+    font-weight: 700;
+    color: #000000;
+  }
+}
+
+.editSkillsWrapper {
+  margin-bottom: 0.75rem;
+}
+
+.editSkillsTitle {
+  margin-bottom: 0.25rem;
+}
+
+.atsSkillsEditList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.atsSkillChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0f172a;
+
+  button {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
+.atsAddSkillForm {
+  display: inline-flex;
+  gap: 0.35rem;
+
+  input {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.78rem;
+    outline: none;
+
+    &:focus {
+      border-color: #3b82f6;
+    }
+  }
+
+  button {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    cursor: pointer;
+
+    &:hover {
+      background: #1e293b;
+    }
+  }
+}
