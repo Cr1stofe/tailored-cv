@@ -18,10 +18,7 @@ const SKILL_GROUPS: Array<[keyof CategorizedResumeSkills, RegExp]> = [
     "backend",
     /node|nest|express|postgres|prisma|sql|api|graphql|jwt|rbac|argon|sessões|sessions|streaming/i,
   ],
-  [
-    "testing",
-    /vitest|jest|testing library|cypress|playwright/i,
-  ],
+  ["testing", /vitest|jest|testing library|cypress|playwright/i],
   [
     "performance",
     /lighthouse|core web vitals|web vitals|performance web|page speed/i,

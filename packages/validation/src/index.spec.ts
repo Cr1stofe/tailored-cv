@@ -54,13 +54,13 @@ describe("Validation Schemas", () => {
       sanitizeHeadline("Software Engineer | NestJS, PostgreSQL & Docker"),
     ).toBe("Software Engineer | NestJS, PostgreSQL & Docker");
 
-    expect(
-      sanitizeHeadline("Dev Full Stack Ninja 🚀 (CLT/PJ)"),
-    ).toBe("Desenvolvedor Full Stack");
+    expect(sanitizeHeadline("Dev Full Stack Ninja 🚀 (CLT/PJ)")).toBe(
+      "Desenvolvedor Full Stack",
+    );
 
-    expect(
-      sanitizeHeadline("Dev Front-end Rockstar 💻 [Remoto]"),
-    ).toBe("Desenvolvedor Front-end");
+    expect(sanitizeHeadline("Dev Front-end Rockstar 💻 [Remoto]")).toBe(
+      "Desenvolvedor Front-end",
+    );
 
     expect(sanitizeHeadline("")).toBe("");
     expect(sanitizeHeadline(null)).toBe("");
