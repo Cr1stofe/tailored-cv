@@ -11,6 +11,7 @@ import {
   evaluateJobCompatibility,
   findRelevantProfileSkills,
   orderTailoredContentByRelevance,
+  profileCoversRequirement,
   synchronizeTailoredResume,
   validateTailoredResume,
 } from "./resume-quality";
@@ -644,6 +645,94 @@ describe("deterministic tailored resume quality", () => {
       );
       expect(incompRec).toBeDefined();
       expect(incompRec).toContain("Presencial ou Híbrida");
+    });
+
+    it("correctly matches qualified job requirements with candidate master skills", () => {
+      const profile = {
+        ...luminaFrontendFixture.masterProfile,
+        certifications: [
+          ...luminaFrontendFixture.masterProfile.certifications,
+          {
+            name: "Inglês: Intermediário",
+            issuer: "Proficiência Profissional",
+          },
+        ],
+      };
+
+      expect(
+        profileCoversRequirement(profile, "JavaScript moderno (ES6+)"),
+      ).toBe(true);
+      expect(profileCoversRequirement(profile, "HTML semântico")).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Conhecimento de HTML semântico, CSS e pré-processadores (Sass ou CSS Modules)",
+        ),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Experiência com gerenciamento de estado (Redux, Zustand ou Context API)",
+        ),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Familiaridade com Git e fluxos de pull request",
+        ),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(profile, "Experiência consumindo APIs REST"),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Inglês para leitura de documentação",
+        ),
+      ).toBe(true);
+    });
+
+    it("does not infer PostgreSQL or Docker for frontend roles mentioning backend collaboration", () => {
+      const frontendJobInput = {
+        company: "Lumina Pagamentos",
+        position: "Desenvolvedor(a) Front-end Pleno (React / TypeScript)",
+        jobDescription:
+          "Trabalhar junto com pessoas de produto, design e back-end em ciclos de duas semanas. Noções de CI/CD (GitHub Actions).",
+        targetLanguage: "PT" as const,
+        masterProfile: luminaFrontendFixture.masterProfile,
+        jobAnalysis: {
+          summary: "Vaga Frontend.",
+          requiredSkills: ["React", "TypeScript", "JavaScript"],
+          desiredSkills: ["Next.js", "GitHub Actions"],
+          keyResponsibilities: [],
+          keywords: ["React", "TypeScript"],
+          matchScore: 90,
+          matchingSkills: ["React", "TypeScript", "JavaScript"],
+          missingSkills: [],
+          strategicRecommendations: [],
+        },
+      };
+
+      const skills = findRelevantProfileSkills(frontendJobInput);
+      expect(skills).not.toContain("PostgreSQL");
+      expect(skills).not.toContain("Docker");
+
+      const draft = validLuminaDraft();
+      draft.highlightedSkills = [
+        "React",
+        "TypeScript",
+        "JavaScript",
+        "Next.js",
+        "CSS",
+        "HTML",
+        "Zustand",
+        "Git",
+      ];
+      const validation = validateTailoredResume(frontendJobInput, draft);
+      const missingSkillErrors = validation.errors.filter(
+        (e) => e.code === "MISSING_RELEVANT_SKILL",
+      );
+      expect(missingSkillErrors).toEqual([]);
     });
   });
 });

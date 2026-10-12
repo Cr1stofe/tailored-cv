@@ -125,19 +125,35 @@ export function findRelevantProfileSkills(input: TailorResumeInput): string[] {
       "Zustand",
     ]);
   }
-  if (
-    /\b(node js|endpoints?|full stack|backend|back end)\b/.test(
+
+  const hasExplicitBackendScope =
+    /\b(perfil\s+full\s*stack|endpoints?\s+(?:em|com)?\s*node|apis?\s+(?:em|com)?\s*node|desenvolvimento\s+backend|desenvolver\s+apis?)\b/.test(
       normalizedVacancy,
-    )
-  ) {
-    addAvailable(["Node.js", "NestJS", "Express", "Prisma", "PostgreSQL"]);
+    ) ||
+    /\b(full\s*stack|backend|back\s*end)\b/.test(normalizeText(input.position));
+
+  if (hasExplicitBackendScope) {
+    addAvailable(["Node.js", "NestJS", "Express", "Prisma"]);
+    if (
+      /\b(postgres|postgresql|banco\s+de\s+dados|database|sql)\b/.test(
+        normalizedVacancy,
+      )
+    ) {
+      addAvailable(["PostgreSQL"]);
+    }
   }
+
   if (/\b(testes?|testing|quality|qualidade)\b/.test(normalizedVacancy)) {
     addAvailable(["Vitest", "Testing Library"]);
   }
+
   if (/\b(ci cd|pipeline|deploy|devops)\b/.test(normalizedVacancy)) {
-    addAvailable(["GitHub Actions", "Docker"]);
+    addAvailable(["GitHub Actions"]);
+    if (/\b(docker|containers?)\b/.test(normalizedVacancy)) {
+      addAvailable(["Docker"]);
+    }
   }
+
   if (
     /\b(performance|lighthouse|core web vitals|web vitals|otimizacao)\b/.test(
       normalizedVacancy,

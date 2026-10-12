@@ -358,6 +358,13 @@ export function profileText(profile: MasterProfileDto): string {
   return [
     profile.summary || "",
     ...profile.skills.map((skill) => skill.name),
+    ...(profile.educations || []).map(
+      (edu) =>
+        `${edu.institution} ${edu.degree || ""} ${edu.fieldOfStudy || ""}`,
+    ),
+    ...(profile.certifications || []).map(
+      (cert) => `${cert.name} ${cert.issuer}`,
+    ),
     ...profile.experiences.flatMap((experience) => [
       experience.position,
       experience.startDate,
@@ -512,4 +519,93 @@ export function removeTechnologyFromRole(
   return role
     .replace(new RegExp(`\\s*[-–—|/]?\\s*${escaped}\\s*$`, "i"), "")
     .trim();
+}
+
+export function profileCoversRequirement(
+  profile: MasterProfileDto,
+  requirement: string,
+): boolean {
+  const normReq = normalizeText(requirement);
+
+  if (/\b(ingles|english)\b/.test(normReq)) {
+    const hasEnglish =
+      (profile.certifications || []).some((c) =>
+        /\b(ingl[eê]s|english)\b/i.test(`${c.name} ${c.issuer}`),
+      ) ||
+      (profile.skills || []).some((s) =>
+        /\b(ingl[eê]s|english)\b/i.test(s.name),
+      ) ||
+      /\b(ingl[eê]s|english)\b/i.test(profile.summary || "") ||
+      Boolean(profile.englishCv);
+    if (hasEnglish) return true;
+  }
+  if (/\b(espanhol|spanish)\b/.test(normReq)) {
+    const hasSpanish =
+      (profile.certifications || []).some((c) =>
+        /\b(espanhol|spanish)\b/i.test(`${c.name} ${c.issuer}`),
+      ) ||
+      (profile.skills || []).some((s) =>
+        /\b(espanhol|spanish)\b/i.test(s.name),
+      ) ||
+      /\b(espanhol|spanish)\b/i.test(profile.summary || "");
+    if (hasSpanish) return true;
+  }
+
+  const normalizedRequirement = normalizeTechnology(requirement);
+  const technologies = masterTechnologySet(profile);
+  if (technologies.has(normalizedRequirement)) return true;
+
+  for (const tech of technologies) {
+    if (tech.length < 2) continue;
+    const pattern = new RegExp(`\\b${tech}\\b`, "i");
+    if (pattern.test(normReq)) {
+      return true;
+    }
+  }
+
+  if (/\bhtml\b/.test(normReq) && technologies.has("html")) return true;
+  if (
+    /\bcss\b/.test(normReq) &&
+    (technologies.has("css") || technologies.has("scss"))
+  )
+    return true;
+  if (/\bjavascript\b/.test(normReq) && technologies.has("javascript"))
+    return true;
+  if (
+    /\b(?:apis?\s*)?rest\b/.test(normReq) &&
+    (technologies.has("apirest") || technologies.has("rest"))
+  )
+    return true;
+  if (/\bgit\b/.test(normReq) && technologies.has("git")) return true;
+  if (
+    /\b(?:testing\s*library|rtl)\b/.test(normReq) &&
+    technologies.has("testinglibrary")
+  )
+    return true;
+  if (
+    /\bcore\s*web\s*vitals\b/.test(normReq) &&
+    (technologies.has("corewebvitals") ||
+      profileText(profile).toLowerCase().includes("core web vitals"))
+  )
+    return true;
+
+  const normalizedProfile = normalizeText(profileText(profile));
+  const tokens = normReq
+    .split(" ")
+    .filter((token) => token.length >= 3 && !STOP_WORDS.has(token));
+  if (
+    tokens.length > 0 &&
+    tokens.every((token) => normalizedProfile.includes(token))
+  ) {
+    return true;
+  }
+
+  if (tokens.length >= 4) {
+    const presentCount = tokens.filter((t) =>
+      normalizedProfile.includes(t),
+    ).length;
+    if (presentCount / tokens.length >= 0.7) return true;
+  }
+
+  return false;
 }

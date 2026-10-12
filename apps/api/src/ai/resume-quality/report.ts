@@ -18,27 +18,13 @@ import {
   masterTechnologySet,
   profileText,
   jobTerms,
+  profileCoversRequirement,
 } from "./core";
 import {} from "./targeting";
 import { relevanceScore } from "./synchronization";
 import {} from "./validation";
 
-export function profileCoversRequirement(
-  profile: MasterProfileDto,
-  requirement: string,
-): boolean {
-  const normalizedRequirement = normalizeTechnology(requirement);
-  const technologies = masterTechnologySet(profile);
-  if (technologies.has(normalizedRequirement)) return true;
-  const normalizedProfile = normalizeText(profileText(profile));
-  const tokens = normalizeText(requirement)
-    .split(" ")
-    .filter((token) => token.length >= 2 && !STOP_WORDS.has(token));
-  return (
-    tokens.length > 0 &&
-    tokens.every((token) => normalizedProfile.includes(token))
-  );
-}
+export { profileCoversRequirement };
 
 export function selectedSourceText(output: TailoredResumeDraft): string {
   return normalizeText(
