@@ -107,6 +107,12 @@ describe("Validation Schemas", () => {
     expect(localizeResumeProjectName("Ranking dos Políticos", true)).toBe(
       "Ranking dos Políticos",
     );
+    expect(localizeResumeProjectName("Portfólio Pessoal", true)).toBe(
+      "Personal Portfolio",
+    );
+    expect(localizeResumeProjectName("Personal Portfolio", false)).toBe(
+      "Portfólio Pessoal",
+    );
   });
 
   it("validates the deterministic tailoring report contract", () => {

@@ -31,6 +31,7 @@ export function buildTargetRole(
     .replace(/\bdev\b\.?/gi, isEnglish ? "Developer" : "Desenvolvedor")
     .replace(/\beng\b\.?/gi, isEnglish ? "Engineer" : "Engenheiro")
     .replace(/\s{2,}/g, " ")
+    .replace(/\s*[-–—]\s*/g, "-")
     .replace(/\s*[-–—/|]\s*$/g, "")
     .replace(/^\s*[-–—/|]\s*/g, "")
     .trim();
@@ -121,8 +122,9 @@ export function findRelevantProfileSkills(input: TailorResumeInput): string[] {
       "HTML",
       "CSS",
       "SCSS",
-      "Tailwind CSS",
       "Zustand",
+      "Redux",
+      "Tailwind CSS",
     ]);
   }
 
@@ -161,5 +163,6 @@ export function findRelevantProfileSkills(input: TailorResumeInput): string[] {
   ) {
     addAvailable(["Core Web Vitals", "Lighthouse"]);
   }
-  return Array.from(new Set([...direct, ...implied]));
+  // Prioritize the deterministic role-focused order over profile storage order.
+  return Array.from(new Set([...implied, ...direct]));
 }

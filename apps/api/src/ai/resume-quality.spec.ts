@@ -115,6 +115,18 @@ describe("deterministic tailored resume quality", () => {
     );
   });
 
+  it("accepts an English decimal LCP value when the master uses a comma and seconds", () => {
+    const draft = validLuminaDraft();
+    draft.tailoredExperiences[0]!.reframedHighlights[0] +=
+      " LCP measured at 1.4.";
+
+    const result = validateTailoredResume(luminaFrontendFixture, draft);
+
+    expect(result.errors.map(({ code }) => code)).not.toContain(
+      "UNSUPPORTED_NUMBER",
+    );
+  });
+
   it.each([
     "more than 100 thousand downloads",
     "over 100+ thousand downloads",
@@ -520,6 +532,30 @@ describe("deterministic tailored resume quality", () => {
       };
       expect(buildTargetRole(inputEn, true)).toBe("Full Stack Developer");
     });
+
+    it("uses an English functional headline and removes duplicated translated bullets", () => {
+      const input = {
+        ...luminaFrontendFixture,
+        targetLanguage: "EN" as const,
+      };
+      const draft = validLuminaDraft();
+      draft.language = "EN";
+      draft.tailoredExperiences[0]!.reframedHighlights = [
+        "Motul Expert: Flutter app with over 100k downloads on Google Play. Restructured the solution with a focus on stability and performance.",
+        "Motul Expert: app Flutter com mais de 100 mil downloads no Google Play. Reestruturei a solução com foco em estabilidade e performance.",
+      ];
+
+      const synchronized = synchronizeTailoredResume(draft, input);
+
+      expect(synchronized.targetedHeadline).toBe("Frontend Developer");
+      expect(synchronized.targetedHeadline).not.toContain("Desenvolvedor");
+      expect(
+        synchronized.tailoredExperiences[0]!.reframedHighlights,
+      ).toHaveLength(1);
+      expect(
+        synchronized.tailoredExperiences[0]!.reframedHighlights[0],
+      ).toContain("over 100k downloads");
+    });
   });
 
   describe("project deduplication", () => {
@@ -701,6 +737,7 @@ describe("deterministic tailored resume quality", () => {
         targetLanguage: "PT" as const,
         masterProfile: luminaFrontendFixture.masterProfile,
         jobAnalysis: {
+          applicationId: "test-application",
           summary: "Vaga Frontend.",
           requiredSkills: ["React", "TypeScript", "JavaScript"],
           desiredSkills: ["Next.js", "GitHub Actions"],
@@ -733,6 +770,33 @@ describe("deterministic tailored resume quality", () => {
         (e) => e.code === "MISSING_RELEVANT_SKILL",
       );
       expect(missingSkillErrors).toEqual([]);
+    });
+
+    it("does not treat a generated English CV as proof of English proficiency", () => {
+      const profile = structuredClone(luminaFrontendFixture.masterProfile);
+      profile.englishCv = structuredClone(profile);
+      profile.certifications = [];
+      profile.skills = profile.skills.filter(
+        (skill) => !/\b(ingl[eê]s|english)\b/i.test(skill.name),
+      );
+
+      expect(profileCoversRequirement(profile, "Inglês para leitura")).toBe(
+        false,
+      );
+    });
+
+    it("does not treat one covered technology as coverage of a multi-technology requirement", () => {
+      const profile = structuredClone(luminaFrontendFixture.masterProfile);
+      profile.skills = profile.skills.filter(
+        (skill) => !/\b(?:aws|kubernetes)\b/i.test(skill.name),
+      );
+
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Experiência com React, Kubernetes e AWS em produção",
+        ),
+      ).toBe(false);
     });
   });
 });

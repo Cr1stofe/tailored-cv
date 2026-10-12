@@ -12,17 +12,11 @@ import type {
 import {
   ResumeQualityResult,
   RELATED_TECH_FAMILIES,
-  STOP_WORDS,
   normalizeText,
-  normalizeTechnology,
-  masterTechnologySet,
-  profileText,
   jobTerms,
   profileCoversRequirement,
 } from "./core";
-import {} from "./targeting";
 import { relevanceScore } from "./synchronization";
-import {} from "./validation";
 
 export { profileCoversRequirement };
 

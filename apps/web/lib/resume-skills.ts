@@ -29,6 +29,27 @@ const SKILL_GROUPS: Array<[keyof CategorizedResumeSkills, RegExp]> = [
   ],
 ];
 
+const FRONTEND_DISPLAY_ORDER = [
+  "react",
+  "typescript",
+  "next.js",
+  "javascript",
+  "html",
+  "css",
+  "scss",
+  "zustand",
+  "redux",
+  "tailwind css",
+];
+
+function frontendSkillPriority(skill: string): number {
+  const normalized = skill.trim().toLowerCase();
+  const index = FRONTEND_DISPLAY_ORDER.findIndex(
+    (term) => normalized === term || normalized.startsWith(`${term} `),
+  );
+  return index === -1 ? FRONTEND_DISPLAY_ORDER.length : index;
+}
+
 export function extractCategorizedSkills(
   profile: MasterProfileDto | null | undefined,
   highlightedSkills?: string[] | null,
@@ -64,7 +85,7 @@ export function extractCategorizedSkills(
 export function categorizeResumeSkills(
   skillNames: string[],
 ): CategorizedResumeSkills {
-  return skillNames.reduce<CategorizedResumeSkills>(
+  const groups = skillNames.reduce<CategorizedResumeSkills>(
     (groups, skill) => {
       const group = SKILL_GROUPS.find(([, pattern]) =>
         pattern.test(skill),
@@ -81,4 +102,9 @@ export function categorizeResumeSkills(
       additional: [],
     },
   );
+
+  groups.frontend.sort(
+    (a, b) => frontendSkillPriority(a) - frontendSkillPriority(b),
+  );
+  return groups;
 }

@@ -103,6 +103,7 @@ export function ensureStrongResults(
   }));
   for (const { experience: source, bullet } of strongSources) {
     if (selected.includes(normalizeText(bullet))) continue;
+    if ((input.targetLanguage || "PT") === "EN") continue;
     const target = experiences.find(
       (experience) =>
         (experience.experienceId && experience.experienceId === source.id) ||
@@ -140,11 +141,31 @@ export function ensureStrongResults(
   return { ...output, tailoredExperiences: experiences };
 }
 
+function deduplicateBullets(bullets: string[]): string[] {
+  return bullets.filter((bullet, index) => {
+    const bulletNumbers = extractNumbers(bullet);
+    const bulletTokens = tokenize(bullet);
+    return !bullets.slice(0, index).some((previous) => {
+      const previousNumbers = extractNumbers(previous);
+      const sharedNumbers = [...bulletNumbers].some((number) =>
+        previousNumbers.has(number),
+      );
+      const tokenOverlap = [...bulletTokens].filter((token) =>
+        tokenize(previous).has(token),
+      ).length;
+      return (
+        similarity(previous, bullet) >= 0.82 ||
+        (sharedNumbers && tokenOverlap >= 2)
+      );
+    });
+  });
+}
+
 export function synchronizeTailoredResume(
   output: TailoredResumeDraft,
   input: TailorResumeInput,
 ): TailoredResumeDraft {
-  const role = buildTargetRole(input);
+  const role = buildTargetRole(input, input.targetLanguage === "EN");
   const summary = normalizeText(output.reframedSummary).startsWith(
     normalizeText(role),
   )
@@ -259,8 +280,10 @@ export function synchronizeTailoredResume(
   synchronized = {
     ...synchronized,
     tailoredExperiences: synchronized.tailoredExperiences.map((experience) => {
-      const reframedHighlights = experience.reframedHighlights.map((bullet) =>
-        appendSourceLinks(input, bullet),
+      const reframedHighlights = deduplicateBullets(
+        experience.reframedHighlights.map((bullet) =>
+          appendSourceLinks(input, bullet),
+        ),
       );
       return {
         ...experience,

@@ -425,7 +425,18 @@ export function extractNumbers(text: string): Set<string> {
   const matches = text.match(
     /\b\d+(?:[.,]\d+)?\s*\+?(?:\s*(?:%|mil(?:h(?:ão|oes|ões))?|thousands?|millions?|k|m|ms|s|anos?|years?|downloads?))?\+?/giu,
   );
-  return new Set((matches || []).map(canonicalNumber));
+  const numbers = new Set<string>();
+  for (const match of matches || []) {
+    const canonical = canonicalNumber(match);
+    numbers.add(canonical);
+    // A metric such as "1,4 s" and its English rendering "1.4"
+    // represent the same LCP value. Keep a unitless alias only for
+    // time units; percentages must remain strict.
+    if (canonical.endsWith("ms") || canonical.endsWith("s")) {
+      numbers.add(canonical.replace(/ms$|s$/i, ""));
+    }
+  }
+  return numbers;
 }
 
 export function tokenize(value: string): Set<string> {
@@ -535,8 +546,7 @@ export function profileCoversRequirement(
       (profile.skills || []).some((s) =>
         /\b(ingl[eê]s|english)\b/i.test(s.name),
       ) ||
-      /\b(ingl[eê]s|english)\b/i.test(profile.summary || "") ||
-      Boolean(profile.englishCv);
+      /\b(ingl[eê]s|english)\b/i.test(profile.summary || "");
     if (hasEnglish) return true;
   }
   if (/\b(espanhol|spanish)\b/.test(normReq)) {
@@ -555,14 +565,6 @@ export function profileCoversRequirement(
   const technologies = masterTechnologySet(profile);
   if (technologies.has(normalizedRequirement)) return true;
 
-  for (const tech of technologies) {
-    if (tech.length < 2) continue;
-    const pattern = new RegExp(`\\b${tech}\\b`, "i");
-    if (pattern.test(normReq)) {
-      return true;
-    }
-  }
-
   if (/\bhtml\b/.test(normReq) && technologies.has("html")) return true;
   if (
     /\bcss\b/.test(normReq) &&
@@ -573,7 +575,9 @@ export function profileCoversRequirement(
     return true;
   if (
     /\b(?:apis?\s*)?rest\b/.test(normReq) &&
-    (technologies.has("apirest") || technologies.has("rest"))
+    (technologies.has("apisrest") ||
+      technologies.has("apirest") ||
+      technologies.has("rest"))
   )
     return true;
   if (/\bgit\b/.test(normReq) && technologies.has("git")) return true;
@@ -589,6 +593,30 @@ export function profileCoversRequirement(
   )
     return true;
 
+  const mentionedProfileTechnologies = new Set<string>();
+  for (const [technology, pattern] of TECH_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(normReq)) mentionedProfileTechnologies.add(technology);
+  }
+  for (const technology of technologies) {
+    if (technology.length < 2) continue;
+    const escaped = technology.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(normReq)) {
+      mentionedProfileTechnologies.add(technology);
+    }
+  }
+
+  if (mentionedProfileTechnologies.size > 0) {
+    const hasAlternative = /\b(?:ou|or|either)\b/.test(normReq);
+    return hasAlternative
+      ? [...mentionedProfileTechnologies].some((technology) =>
+          technologies.has(technology),
+        )
+      : [...mentionedProfileTechnologies].every((technology) =>
+          technologies.has(technology),
+        );
+  }
+
   const normalizedProfile = normalizeText(profileText(profile));
   const tokens = normReq
     .split(" ")
@@ -598,13 +626,6 @@ export function profileCoversRequirement(
     tokens.every((token) => normalizedProfile.includes(token))
   ) {
     return true;
-  }
-
-  if (tokens.length >= 4) {
-    const presentCount = tokens.filter((t) =>
-      normalizedProfile.includes(t),
-    ).length;
-    if (presentCount / tokens.length >= 0.7) return true;
   }
 
   return false;

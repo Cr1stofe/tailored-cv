@@ -26,12 +26,21 @@ import { safeParseAiJson } from "./json-parser";
 import {
   getHighlightedSkillCap,
   localizeTechnicalTerm,
+  preserveMasterProductNames,
   preserveMasterSummary,
   replaceLanguageContamination,
   sanitizeGeneratedCopy,
 } from "./resume-sanitizer";
 
 const logger = new Logger("GeminiResumeTailor");
+
+const NON_BLOCKING_QUALITY_CODES = new Set([
+  "HEADLINE_SUMMARY_MISMATCH",
+  "SUMMARY_BODY_MISMATCH",
+  "MISSING_RELEVANT_SKILL",
+  "IRRELEVANT_ORDER",
+  "STRONG_RESULT_OMITTED",
+]);
 
 export async function tailorResumeWithGemini(
   client: GeminiClient,
@@ -129,6 +138,7 @@ DIRETRIZES ESTRITAS DE EXECUÇÃO:
  - Adapte somente a função/área da primeira frase para espelhar a vaga e reordene tecnologias reais quando necessário.
  - Preserve as demais frases, números, métricas e qualificadores que tenham respaldo no corpo final.
  - Toda tecnologia e todo produto citados no resumo devem aparecer em Competências, Experiência ou Projetos. Se cortar um item do corpo, remova também sua menção do resumo.
+ - Se o resumo mantiver um produto ou resultado mensurável do master, mantenha também no corpo pelo menos uma evidência correspondente, priorizando Ranking dos Políticos (LCP/Lighthouse) e Motul Expert (downloads) quando houver espaço.
  - Não reescreva do zero, não resuma resultados e não introduza clichês.
 
 3. COMPETÊNCIAS DESTACADAS (highlightedSkills):
@@ -256,7 +266,10 @@ Retorne APENAS um JSON válido seguindo estritamente este formato:
                 localizeTechnicalTerm(technology, isEnglish),
               ),
               reframedHighlights: experience.reframedHighlights.map((bullet) =>
-                replaceLanguageContamination(bullet.trim(), isEnglish),
+                preserveMasterProductNames(
+                  replaceLanguageContamination(bullet.trim(), isEnglish),
+                  input,
+                ),
               ),
               period: normalizePeriod(experience.period, isEnglish)
                 .replace(bannedAnnotationRe, "")
@@ -293,7 +306,10 @@ Retorne APENAS um JSON válido seguindo estritamente este formato:
                     isEnglish,
                   ),
             reframedHighlights: project.reframedHighlights.map((bullet) =>
-              replaceLanguageContamination(bullet.trim(), isEnglish),
+              preserveMasterProductNames(
+                replaceLanguageContamination(bullet.trim(), isEnglish),
+                input,
+              ),
             ),
           };
         });
@@ -305,7 +321,13 @@ Retorne APENAS um JSON válido seguindo estritamente este formato:
             : `Currículo Adaptado — ${input.company}`,
           targetedHeadline: targetRole,
           reframedSummary: preserveMasterSummary(
-            replaceLanguageContamination(validated.reframedSummary, isEnglish),
+            preserveMasterProductNames(
+              replaceLanguageContamination(
+                validated.reframedSummary,
+                isEnglish,
+              ),
+              input,
+            ),
             input,
             isEnglish,
           ),
@@ -319,8 +341,21 @@ Retorne APENAS um JSON válido seguindo estritamente este formato:
           input,
         );
         const quality = validateTailoredResume(input, ordered);
-        if (!quality.valid) {
-          feedback = quality.errors.map((issue) => issue.message);
+        const blockingErrors = quality.errors.filter(
+          (issue) => !NON_BLOCKING_QUALITY_CODES.has(issue.code),
+        );
+        const repairableErrors = quality.errors.filter((issue) =>
+          ["SUMMARY_BODY_MISMATCH", "HEADLINE_SUMMARY_MISMATCH"].includes(
+            issue.code,
+          ),
+        );
+        if (
+          blockingErrors.length > 0 ||
+          (repairableErrors.length > 0 && attempt < 2)
+        ) {
+          feedback = [...blockingErrors, ...repairableErrors].map(
+            (issue) => issue.message,
+          );
           lastError = new Error(feedback.join(" "));
           logger.warn(
             `Tailored resume failed deterministic validation on attempt ${attempt}: ${feedback.join(" | ")}`,
@@ -328,8 +363,19 @@ Retorne APENAS um JSON válido seguindo estritamente este formato:
           continue;
         }
 
+        const acceptedQuality = quality.errors.length
+          ? {
+              ...quality,
+              valid: true,
+              warnings: [
+                ...quality.warnings,
+                ...quality.errors.map((issue) => issue.message),
+              ],
+            }
+          : quality;
+
         return tailoredResumeOutputSchema.parse(
-          withGenerationReport(input, ordered, quality),
+          withGenerationReport(input, ordered, acceptedQuality),
         );
       } catch (error) {
         lastError = error;

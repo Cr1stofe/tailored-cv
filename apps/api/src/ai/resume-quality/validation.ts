@@ -25,7 +25,6 @@ import {
   technologyAppearsInText,
   profileCoversRequirement,
 } from "./core";
-import { findRelevantProfileSkills } from "./targeting";
 import {
   summaryEvidenceGaps,
   relevanceScore,
