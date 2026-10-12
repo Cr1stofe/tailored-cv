@@ -8,6 +8,7 @@ import {
   TailoredResumeDto,
   TailoredExperienceItem,
   TailoredProjectItem,
+  TailoringReport,
   SupportedLanguage,
   PaginatedResult,
   JobApplicationFiltersDto,
@@ -289,6 +290,8 @@ export class JobApplicationService {
         tailoredProjects: tailorOutput.tailoredProjects
           ? (tailorOutput.tailoredProjects as unknown as Prisma.InputJsonValue)
           : Prisma.JsonNull,
+        generationReport:
+          tailorOutput.generationReport as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -314,6 +317,9 @@ export class JobApplicationService {
       tailoredProjects: this.mapTailoredProjects(
         createdResume.tailoredProjects,
         targetLanguage,
+      ),
+      generationReport: this.mapGenerationReport(
+        createdResume.generationReport,
       ),
       createdAt: createdResume.createdAt.toISOString(),
       updatedAt: createdResume.updatedAt.toISOString(),
@@ -347,6 +353,7 @@ export class JobApplicationService {
         resume.tailoredProjects,
         resume.language,
       ),
+      generationReport: this.mapGenerationReport(resume.generationReport),
       createdAt: resume.createdAt.toISOString(),
       updatedAt: resume.updatedAt.toISOString(),
     };
@@ -422,6 +429,7 @@ export class JobApplicationService {
         updated.tailoredProjects,
         updated.language,
       ),
+      generationReport: this.mapGenerationReport(updated.generationReport),
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     };
@@ -447,6 +455,23 @@ export class JobApplicationService {
             : project.name,
       };
     }) as unknown as TailoredProjectItem[];
+  }
+
+  private mapGenerationReport(value: Prisma.JsonValue | null): TailoringReport {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return value as unknown as TailoringReport;
+    }
+    return {
+      highlighted: [],
+      removed: [],
+      uncovered_requirements: [],
+      match_score: 0,
+      match_explanation:
+        "Relatório indisponível para esta versão anterior do currículo.",
+      warnings: [
+        "Currículo gerado antes da inclusão das validações de qualidade.",
+      ],
+    };
   }
 
   private mapApplication(item: {
@@ -488,6 +513,7 @@ export class JobApplicationService {
       highlightedSkills: string[];
       tailoredExperiences: Prisma.JsonValue;
       tailoredProjects: Prisma.JsonValue | null;
+      generationReport: Prisma.JsonValue | null;
       createdAt: Date;
       updatedAt: Date;
     }[];
@@ -537,6 +563,7 @@ export class JobApplicationService {
           r.tailoredProjects,
           r.language,
         ),
+        generationReport: this.mapGenerationReport(r.generationReport),
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
       })),

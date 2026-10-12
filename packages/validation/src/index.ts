@@ -151,9 +151,23 @@ export const tailoredProjectItemSchema = z.object({
   projectId: z.string().optional(),
   name: z.string(),
   description: z.string(),
-  url: z.string().optional(),
+  url: z.string().nullable().optional(),
   reframedHighlights: z.array(z.string()),
   technologies: z.array(z.string()),
+});
+
+export const tailoringReportEntrySchema = z.object({
+  item: z.string().trim().min(1),
+  reason: z.string().trim().min(1),
+});
+
+export const tailoringReportSchema = z.object({
+  highlighted: z.array(tailoringReportEntrySchema),
+  removed: z.array(tailoringReportEntrySchema),
+  uncovered_requirements: z.array(z.string().trim().min(1)),
+  match_score: z.number().int().min(0).max(100),
+  match_explanation: z.string().trim().min(1),
+  warnings: z.array(z.string().trim().min(1)),
 });
 
 export const tailoredResumeFormSchema = z.object({
@@ -179,18 +193,42 @@ export const tailoredResumeOutputSchema = z.object({
   highlightedSkills: z.array(z.string()),
   tailoredExperiences: z.array(tailoredExperienceItemSchema),
   tailoredProjects: z.array(tailoredProjectItemSchema).nullable().optional(),
+  generationReport: tailoringReportSchema,
+});
+
+export const tailoredResumeDraftSchema = tailoredResumeOutputSchema.omit({
+  generationReport: true,
 });
 
 export function sanitizeHeadline(headline?: string | null): string {
   if (!headline) return "";
-  return headline
+  let clean = headline
     .replace(
-      /\b(senior|sênior|sr\.?|pleno|pl\.?|junior|júnior|jr\.?|mid-level|mid|lead|staff|principal|especialista)\b\s*[-–—/]?\s*/gi,
+      /[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
       "",
     )
+    .replace(
+      /\b(ninja|rockstar|guru|jedi|wizard|mago|hacker|evangelist|astro|campe[ãa]o)\b/gi,
+      "",
+    )
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
+    .replace(
+      /\b(senior|sênior|sr\.?|pleno|pl\.?|junior|júnior|jr\.?|mid-level|mid|lead|staff|principal|especialista|specialist)\b\s*[-–—/]?\s*/gi,
+      "",
+    )
+    .replace(/\bdev\b\.?/gi, "Desenvolvedor")
+    .replace(/\beng\b\.?/gi, "Engenheiro")
     .replace(/\s{2,}/g, " ")
     .replace(/^[-–—|/]\s*/, "")
+    .replace(/\s*[-–—|/]$/, "")
     .trim();
+
+  clean = clean
+    .replace(/^pessoa\s+desenvolvedora\b/i, "Desenvolvedor")
+    .replace(/^pessoa\s+desenvolvedor\b/i, "Desenvolvedor")
+    .replace(/^desenvolvedora\b/i, "Desenvolvedor");
+
+  return clean;
 }
 
 export function formatResumeDate(dateStr?: string | null): string {
@@ -274,4 +312,6 @@ export type CreateJobApplicationInput = z.infer<
 >;
 export type JobAnalysisOutput = z.infer<typeof jobAnalysisOutputSchema>;
 export type TailoredResumeOutput = z.infer<typeof tailoredResumeOutputSchema>;
+export type TailoredResumeDraft = z.infer<typeof tailoredResumeDraftSchema>;
+export type TailoringReport = z.infer<typeof tailoringReportSchema>;
 export type TailoredResumeFormInput = z.infer<typeof tailoredResumeFormSchema>;

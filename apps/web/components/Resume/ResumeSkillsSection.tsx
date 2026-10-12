@@ -25,9 +25,12 @@ export function ResumeSkillsSection({
   onRemoveSkill,
 }: ResumeSkillsSectionProps) {
   const hasAnySkills =
-    skills.professional.length > 0 ||
-    skills.handsOn.length > 0 ||
-    skills.familiar.length > 0;
+    skills.frontend.length > 0 ||
+    skills.backend.length > 0 ||
+    skills.testing.length > 0 ||
+    (skills.performance?.length || 0) > 0 ||
+    skills.devOps.length > 0 ||
+    skills.additional.length > 0;
 
   if (!hasAnySkills && !isEditing) return null;
 
@@ -86,36 +89,60 @@ export function ResumeSkillsSection({
           </div>
         )}
 
-        {skills.professional.length > 0 && (
+        {skills.frontend.length > 0 && (
           <p>
-            <strong>
-              {isEn ? "Core Technologies:" : "Tecnologias Principais:"}
-            </strong>{" "}
-            {skills.professional
+            <strong>Frontend:</strong>{" "}
+            {skills.frontend
               .map((skill) => localizeResumeTerm(skill, isEn))
               .join(", ")}
             .
           </p>
         )}
 
-        {skills.handsOn.length > 0 && (
+        {skills.backend.length > 0 && (
           <p>
-            <strong>
-              {isEn ? "Testing & Tooling:" : "Testes & Ferramentas:"}
-            </strong>{" "}
-            {skills.handsOn
+            <strong>Backend:</strong>{" "}
+            {skills.backend
               .map((skill) => localizeResumeTerm(skill, isEn))
               .join(", ")}
             .
           </p>
         )}
 
-        {skills.familiar.length > 0 && (
+        {skills.testing.length > 0 && (
           <p>
-            <strong>
-              {isEn ? "Additional Technologies:" : "Tecnologias Adicionais:"}
-            </strong>{" "}
-            {skills.familiar
+            <strong>{isEn ? "Testing:" : "Testes:"}</strong>{" "}
+            {skills.testing
+              .map((skill) => localizeResumeTerm(skill, isEn))
+              .join(", ")}
+            .
+          </p>
+        )}
+
+        {skills.devOps.length > 0 && (
+          <p>
+            <strong>DevOps:</strong>{" "}
+            {skills.devOps
+              .map((skill) => localizeResumeTerm(skill, isEn))
+              .join(", ")}
+            .
+          </p>
+        )}
+
+        {skills.performance && skills.performance.length > 0 && (
+          <p>
+            <strong>Performance:</strong>{" "}
+            {skills.performance
+              .map((skill) => localizeResumeTerm(skill, isEn))
+              .join(", ")}
+            .
+          </p>
+        )}
+
+        {skills.additional.length > 0 && (
+          <p>
+            <strong>{isEn ? "Additional:" : "Adicionais:"}</strong>{" "}
+            {skills.additional
               .map((skill) => localizeResumeTerm(skill, isEn))
               .join(", ")}
             .

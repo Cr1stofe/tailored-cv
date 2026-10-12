@@ -1,10 +1,33 @@
 import { MasterProfileDto } from "@tailored-cv/types";
 
 export interface CategorizedResumeSkills {
-  professional: string[];
-  handsOn: string[];
-  familiar: string[];
+  frontend: string[];
+  backend: string[];
+  testing: string[];
+  devOps: string[];
+  performance: string[];
+  additional: string[];
 }
+
+const SKILL_GROUPS: Array<[keyof CategorizedResumeSkills, RegExp]> = [
+  [
+    "frontend",
+    /react|next|javascript|typescript|html|css|scss|tailwind|zustand|redux|hook form|flutter|dart|wordpress/i,
+  ],
+  [
+    "backend",
+    /node|nest|express|postgres|prisma|sql|api|graphql|jwt|rbac|argon|sessões|sessions|streaming/i,
+  ],
+  ["testing", /vitest|jest|testing library|cypress|playwright/i],
+  [
+    "performance",
+    /lighthouse|core web vitals|web vitals|performance web|page speed/i,
+  ],
+  [
+    "devOps",
+    /docker|github actions|ci(?:\/cd)?|linux|caddy|nginx|cloud|aws|oracle|turborepo/i,
+  ],
+];
 
 export function extractCategorizedSkills(
   profile: MasterProfileDto | null | undefined,
@@ -35,19 +58,27 @@ export function extractCategorizedSkills(
     return true;
   });
 
-  const professional = selectedSkills
-    .filter((s) => s.category === "PROFESSIONAL")
-    .map((s) => s.name);
-  const handsOn = selectedSkills
-    .filter((s) => s.category === "HANDS_ON")
-    .map((s) => s.name);
-  const familiar = selectedSkills
-    .filter((s) => s.category === "FAMILIAR")
-    .map((s) => s.name);
+  return categorizeResumeSkills(selectedSkills.map((skill) => skill.name));
+}
 
-  return {
-    professional,
-    handsOn,
-    familiar,
-  };
+export function categorizeResumeSkills(
+  skillNames: string[],
+): CategorizedResumeSkills {
+  return skillNames.reduce<CategorizedResumeSkills>(
+    (groups, skill) => {
+      const group = SKILL_GROUPS.find(([, pattern]) =>
+        pattern.test(skill),
+      )?.[0];
+      groups[group || "additional"].push(skill);
+      return groups;
+    },
+    {
+      frontend: [],
+      backend: [],
+      testing: [],
+      devOps: [],
+      performance: [],
+      additional: [],
+    },
+  );
 }
