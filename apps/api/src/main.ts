@@ -2,26 +2,50 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import cookieParser from "cookie-parser";
+import express from "express";
 import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
+import { InMemoryRateLimiter } from "./common/security/rate-limit";
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger("Bootstrap");
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
 
   app.enableShutdownHooks();
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
-  app.use((_req: Request, res: Response, next: NextFunction) => {
+  app.use(express.json({ limit: "256kb" }));
+  app.use(express.urlencoded({ extended: false, limit: "64kb" }));
+  app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
-      "Permissions-Policy",
-      "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
     );
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    );
+    if (process.env.NODE_ENV === "production") {
+      res.setHeader(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains",
+      );
+    }
+    if (req.path.startsWith("/.")) {
+      res.status(404).end();
+      return;
+    }
     next();
   });
+
+  const rateLimiter = new InMemoryRateLimiter();
+  app.use(rateLimiter.middleware());
 
   app.use(cookieParser());
 
