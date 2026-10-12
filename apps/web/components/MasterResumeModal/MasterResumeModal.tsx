@@ -15,6 +15,7 @@ import {
   ResumeSkillsSection,
   ResumeEducationSection,
 } from "../Resume";
+import { categorizeResumeSkills } from "@/lib/resume-skills";
 import styles from "./MasterResumeModal.module.scss";
 
 interface MasterResumeModalProps {
@@ -261,11 +262,11 @@ export function MasterResumeModal({
             )}
 
             <ResumeSkillsSection
-              skills={{
-                professional: professionalSkills,
-                handsOn: handsOnSkills,
-                familiar: familiarSkills,
-              }}
+              skills={categorizeResumeSkills([
+                ...professionalSkills,
+                ...handsOnSkills,
+                ...familiarSkills,
+              ])}
               isEn={isEn}
             />
 

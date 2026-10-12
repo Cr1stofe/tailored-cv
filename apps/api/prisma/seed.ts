@@ -30,8 +30,6 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const profileData = loadSeedProfileData();
 
-  console.log(`Iniciando seed do perfil: ${profileData.fullName}...`);
-
   const initialEmail = process.env.INITIAL_USER_EMAIL?.toLowerCase().trim();
   const initialPassword = process.env.INITIAL_USER_PASSWORD;
   const initialName = process.env.INITIAL_USER_NAME || profileData.fullName;
@@ -165,18 +163,12 @@ async function main() {
       });
     }
   });
-
-  console.log("Perfil criado com sucesso sob transação atômica.");
-  if (initialEmail && initialPassword) {
-    console.log(
-      `Usuário inicial (${initialEmail}) criado se ainda não existia; credenciais existentes foram preservadas.`,
-    );
-  }
 }
 
 main()
   .catch((e) => {
-    console.error("Erro durante execução do seed:", e);
+    const message = e instanceof Error ? e.stack || e.message : String(e);
+    process.stderr.write(`Erro durante execução do seed: ${message}\n`);
     process.exit(1);
   })
   .finally(async () => {

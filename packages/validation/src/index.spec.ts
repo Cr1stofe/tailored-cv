@@ -5,6 +5,7 @@ import {
   formatResumeDate,
   localizeResumeProjectName,
   normalizePeriod,
+  tailoringReportSchema,
 } from "./index";
 
 describe("Validation Schemas", () => {
@@ -53,6 +54,14 @@ describe("Validation Schemas", () => {
       sanitizeHeadline("Software Engineer | NestJS, PostgreSQL & Docker"),
     ).toBe("Software Engineer | NestJS, PostgreSQL & Docker");
 
+    expect(
+      sanitizeHeadline("Dev Full Stack Ninja 🚀 (CLT/PJ)"),
+    ).toBe("Desenvolvedor Full Stack");
+
+    expect(
+      sanitizeHeadline("Dev Front-end Rockstar 💻 [Remoto]"),
+    ).toBe("Desenvolvedor Front-end");
+
     expect(sanitizeHeadline("")).toBe("");
     expect(sanitizeHeadline(null)).toBe("");
   });
@@ -98,5 +107,18 @@ describe("Validation Schemas", () => {
     expect(localizeResumeProjectName("Ranking dos Políticos", true)).toBe(
       "Ranking dos Políticos",
     );
+  });
+
+  it("validates the deterministic tailoring report contract", () => {
+    const result = tailoringReportSchema.safeParse({
+      highlighted: [{ item: "Portfólio Pessoal", reason: "Comprova CI." }],
+      removed: [{ item: "Flutter", reason: "Menor relevância." }],
+      uncovered_requirements: ["Obrigatório: Cypress"],
+      match_score: 75,
+      match_explanation: "3 de 4 requisitos obrigatórios cobertos.",
+      warnings: [],
+    });
+
+    expect(result.success).toBe(true);
   });
 });

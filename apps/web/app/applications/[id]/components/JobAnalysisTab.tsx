@@ -63,23 +63,47 @@ export function JobAnalysisTab({
           ? "#f59e0b"
           : "#ef4444";
 
+  const recommendationRec = analysis.strategicRecommendations?.find((r) =>
+    r.toLowerCase().startsWith("recomendação:"),
+  );
+  const recommendationType = recommendationRec
+    ? recommendationRec.includes("Não recomendado")
+      ? "Não recomendado"
+      : recommendationRec.includes("Aplicar com ressalvas")
+        ? "Aplicar com ressalvas"
+        : "Aplicar"
+    : score >= 80
+      ? "Aplicar"
+      : score >= 50
+        ? "Aplicar com ressalvas"
+        : "Não recomendado";
+
   const badgeClass =
-    score >= 80
+    recommendationType === "Aplicar"
       ? styles.matchHigh
-      : score >= 60
+      : recommendationType === "Aplicar com ressalvas"
         ? styles.matchMedium
         : styles.matchLow;
 
   const badgeText =
-    score >= 80
-      ? "Alta Compatibilidade"
-      : score >= 60
-        ? "Boa Aderência"
-        : "Requer Atenção Estratégica";
+    recommendationType === "Aplicar"
+      ? "Recomendado: Aplicar"
+      : recommendationType === "Aplicar com ressalvas"
+        ? "Aplicar com Ressalvas"
+        : "Não Recomendado";
 
-  const totalTrackedSkills =
-    (analysis.matchingSkills?.length || 0) +
-    (analysis.missingSkills?.length || 0);
+  const requiredCount = analysis.requiredSkills?.length || 0;
+  const desiredCount = analysis.desiredSkills?.length || 0;
+  const matchingRequiredCount = (analysis.requiredSkills || []).filter((req) =>
+    (analysis.matchingSkills || []).some(
+      (m) => m.toLowerCase() === req.toLowerCase(),
+    ),
+  ).length;
+  const matchingDesiredCount = (analysis.desiredSkills || []).filter((des) =>
+    (analysis.matchingSkills || []).some(
+      (m) => m.toLowerCase() === des.toLowerCase(),
+    ),
+  ).length;
 
   return (
     <div className="no-print">
@@ -89,7 +113,7 @@ export function JobAnalysisTab({
             <svg
               className={styles.radialSvg}
               viewBox="0 0 150 150"
-              aria-label={`Score de compatibilidade: ${score}%`}
+              aria-label={`Score de compatibilidade técnica: ${score}%`}
             >
               <circle className={styles.gaugeBg} cx="75" cy="75" r={radius} />
               <circle
@@ -107,7 +131,7 @@ export function JobAnalysisTab({
                 {score}
                 <span className={styles.gaugePercent}>%</span>
               </div>
-              <span className={styles.gaugeCaption}>Match ATS</span>
+              <span className={styles.gaugeCaption}>Match Técnico</span>
             </div>
           </div>
 
@@ -128,17 +152,28 @@ export function JobAnalysisTab({
             <div className={styles.kpiGrid}>
               <div className={styles.kpiCard}>
                 <span className={styles.kpiValue}>
-                  {analysis.matchingSkills?.length || 0}
-                  {totalTrackedSkills > 0 ? ` / ${totalTrackedSkills}` : ""}
+                  {requiredCount > 0
+                    ? `${matchingRequiredCount} / ${requiredCount}`
+                    : `${analysis.matchingSkills?.length || 0}`}
                 </span>
-                <span className={styles.kpiLabel}>Requisitos Atendidos</span>
+                <span className={styles.kpiLabel}>
+                  {requiredCount > 0
+                    ? "Obrigatórios Atendidos"
+                    : "Requisitos Atendidos"}
+                </span>
               </div>
 
               <div className={styles.kpiCard}>
                 <span className={styles.kpiValue}>
-                  {analysis.missingSkills?.length || 0}
+                  {desiredCount > 0
+                    ? `${matchingDesiredCount} / ${desiredCount}`
+                    : `${analysis.missingSkills?.length || 0}`}
                 </span>
-                <span className={styles.kpiLabel}>Gaps Detectados</span>
+                <span className={styles.kpiLabel}>
+                  {desiredCount > 0
+                    ? "Diferenciais Atendidos"
+                    : "Gaps Detectados"}
+                </span>
               </div>
 
               <div className={styles.kpiCard}>

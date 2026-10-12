@@ -372,7 +372,11 @@ export function TailoredResumeTab({
             : currentResume?.tailoredExperiences || []
           ).map((exp, idx) => (
             <div
-              key={"id" in exp ? String(exp.id) : exp.experienceId || idx}
+              key={
+                isEditingResume && "id" in exp
+                  ? String(exp.id)
+                  : `${exp.experienceId || exp.company || "exp"}-${idx}`
+              }
               className={styles.atsItem}
             >
               <div className={styles.atsItemHeader}>
@@ -452,7 +456,11 @@ export function TailoredResumeTab({
               : currentResume?.tailoredProjects || []
             ).map((proj, idx) => (
               <div
-                key={"id" in proj ? String(proj.id) : proj.projectId || idx}
+                key={
+                  isEditingResume && "id" in proj
+                    ? String(proj.id)
+                    : `${proj.projectId || proj.name || "proj"}-${idx}`
+                }
                 className={styles.atsItem}
               >
                 <div className={styles.atsItemHeader}>

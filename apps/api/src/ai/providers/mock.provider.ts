@@ -11,10 +11,20 @@ import {
   JobAnalysisInput,
   TailorResumeInput,
   JobAnalysisOutput,
+  TailoredResumeDraft,
   TailoredResumeOutput,
-  sanitizeHeadline,
   formatResumeDate,
 } from "../ai.constants";
+import {
+  buildTargetRole,
+  evaluateJobCompatibility,
+  findRelevantProfileSkills,
+  orderTailoredContentByRelevance,
+  relevanceScore,
+  synchronizeTailoredResume,
+  validateTailoredResume,
+  withGenerationReport,
+} from "../resume-quality";
 
 export class MockProvider implements AIProvider {
   private readonly logger = new Logger(MockProvider.name);
@@ -48,17 +58,7 @@ export class MockProvider implements AIProvider {
         !candidateSkillsLower.includes(skill.toLowerCase()),
     );
 
-    const matchScore = Math.min(
-      95,
-      Math.max(
-        50,
-        Math.round(
-          (matchingSkills.length / Math.max(candidateSkills.length, 1)) * 100,
-        ) + 30,
-      ),
-    );
-
-    return {
+    return evaluateJobCompatibility(input, {
       summary: `Oportunidade para ${input.position} na empresa ${input.company}, com foco em desenvolvimento de ponta a ponta e práticas modernas de engenharia.`,
       seniorityLevel: "Pleno / Sênior",
       requiredSkills: matchingSkills.slice(0, 5),
@@ -71,14 +71,13 @@ export class MockProvider implements AIProvider {
       keywords: Array.from(
         new Set([...matchingSkills, input.position, "Clean Architecture"]),
       ),
-      matchScore,
       matchingSkills,
       missingSkills,
       strategicRecommendations: [
         "Enfatizar resultados práticos e arquitetura limpa nos primeiros bullets de cada experiência.",
         "Manter integridade estrita sem mencionar ferramentas não utilizadas no dia a dia.",
       ],
-    };
+    });
   }
 
   async tailorResume(input: TailorResumeInput): Promise<TailoredResumeOutput> {
@@ -88,40 +87,53 @@ export class MockProvider implements AIProvider {
 
     const isEnglish = input.targetLanguage === "EN";
     const candidateSkills = input.masterProfile.skills.map((s) => s.name);
-    const descLower = (input.jobDescription || "").toLowerCase();
 
-    const relevantProjects = [...input.masterProfile.projects]
+    const selectedExperienceBullets = input.masterProfile.experiences.flatMap(
+      (experience) =>
+        [...experience.highlights]
+          .sort((a, b) => relevanceScore(b, input) - relevanceScore(a, input))
+          .slice(0, 4),
+    );
+    let relevantProjects = [...input.masterProfile.projects]
+      .filter(
+        (project) =>
+          !selectedExperienceBullets.some((bullet) =>
+            bullet.toLowerCase().includes(project.name.toLowerCase()),
+          ),
+      )
       .sort((a, b) => {
-        const aMatches = a.technologies.filter((t) =>
-          descLower.includes(t.toLowerCase()),
-        ).length;
-        const bMatches = b.technologies.filter((t) =>
-          descLower.includes(t.toLowerCase()),
-        ).length;
-        return bMatches - aMatches;
+        return (
+          relevanceScore(
+            `${b.name} ${b.description} ${b.technologies.join(" ")} ${b.highlights.join(" ")}`,
+            input,
+          ) -
+          relevanceScore(
+            `${a.name} ${a.description} ${a.technologies.join(" ")} ${a.highlights.join(" ")}`,
+            input,
+          )
+        );
       })
-      .slice(0, 3);
+      .slice(0, 2);
 
-    const cleanRole =
-      sanitizeHeadline(input.position.replace(/\(.*?\)/g, "").trim()) ||
-      (isEnglish ? "Software Engineer" : "Engenheiro de Software");
+    if (relevantProjects.length === 0) {
+      relevantProjects = input.masterProfile.projects.slice(0, 2);
+    }
 
-    return {
+    const cleanRole = buildTargetRole(input, isEnglish);
+    const matchedSkills = findRelevantProfileSkills(input);
+    const draft: TailoredResumeDraft = {
       title: isEnglish
-        ? `Tailored Resume — ${input.position} (${input.company})`
-        : `Currículo Adaptado — ${input.position} (${input.company})`,
+        ? `Tailored Resume — ${input.company}`
+        : `Currículo Adaptado — ${input.company}`,
       language: input.targetLanguage || "PT",
-      targetedHeadline: sanitizeHeadline(
-        `${cleanRole} | Node.js · NestJS · TypeScript · React · Next.js`,
-      ),
+      targetedHeadline: cleanRole,
       reframedSummary: isEnglish
         ? "Results-driven Software Engineer with extensive experience delivering robust, high-performance web and mobile applications in production. Specialized in TypeScript, the React/Next.js ecosystem, and scalable Node.js architectures."
         : input.masterProfile.summary ||
           `Desenvolvedor Full Stack com sólida experiência na entrega de soluções escaláveis em produção, com forte domínio em TypeScript, ecossistema React/Next.js e arquiteturas de backend com Node.js e PostgreSQL. Foco em alta performance, código limpo e impacto mensurável para a ${input.company}.`,
-      highlightedSkills: candidateSkills
-        .filter((s) => descLower.includes(s.toLowerCase()))
-        .concat(candidateSkills)
-        .slice(0, 8),
+      highlightedSkills: Array.from(
+        new Set([...matchedSkills, ...candidateSkills]),
+      ).slice(0, 16),
       tailoredExperiences: input.masterProfile.experiences.map((exp) => ({
         experienceId: exp.id,
         company: exp.company,
@@ -137,7 +149,9 @@ export class MockProvider implements AIProvider {
             ? "Remote"
             : exp.location || "Remote"
           : exp.location || "Remoto",
-        reframedHighlights: exp.highlights,
+        reframedHighlights: [...exp.highlights]
+          .sort((a, b) => relevanceScore(b, input) - relevanceScore(a, input))
+          .slice(0, 4),
         technologies: exp.technologies,
       })),
       tailoredProjects: relevantProjects.map((proj) => ({
@@ -151,6 +165,12 @@ export class MockProvider implements AIProvider {
         technologies: proj.technologies,
       })),
     };
+    const ordered = orderTailoredContentByRelevance(
+      synchronizeTailoredResume(draft, input),
+      input,
+    );
+    const quality = validateTailoredResume(input, ordered);
+    return withGenerationReport(input, ordered, quality);
   }
 
   async translateProfileToEnglish(

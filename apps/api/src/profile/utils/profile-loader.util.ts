@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { Logger } from "@nestjs/common";
 import {
   masterProfileSchema,
   type MasterProfileInput,
@@ -17,6 +18,8 @@ const DEFAULT_FALLBACK_PROFILE: MasterProfileInput = {
   educations: [],
   certifications: [],
 };
+
+const logger = new Logger("ProfileLoader");
 
 export function loadSeedProfileData(): MasterProfileInput {
   const candidatePaths = [
@@ -44,12 +47,13 @@ export function loadSeedProfileData(): MasterProfileInput {
           return parseResult.data;
         }
 
-        console.warn(
-          `[ProfileLoader] Aviso: ${filePath} não passou na validação do schema:`,
-          parseResult.error.format(),
+        logger.warn(
+          `O arquivo ${filePath} não passou na validação do schema: ${JSON.stringify(parseResult.error.format())}`,
         );
       } catch (err) {
-        console.warn(`[ProfileLoader] Aviso ao ler ${filePath}:`, err);
+        logger.warn(
+          `Não foi possível ler ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }

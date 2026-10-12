@@ -111,9 +111,23 @@ export interface TailoredProjectItem {
   projectId?: string;
   name: string;
   description: string;
-  url?: string;
+  url?: string | null;
   reframedHighlights: string[];
   technologies: string[];
+}
+
+export interface TailoringReportEntry {
+  item: string;
+  reason: string;
+}
+
+export interface TailoringReport {
+  highlighted: TailoringReportEntry[];
+  removed: TailoringReportEntry[];
+  uncovered_requirements: string[];
+  match_score: number;
+  match_explanation: string;
+  warnings: string[];
 }
 
 export interface TailoredResumeDto {
@@ -127,6 +141,7 @@ export interface TailoredResumeDto {
   highlightedSkills: string[];
   tailoredExperiences: TailoredExperienceItem[];
   tailoredProjects?: TailoredProjectItem[] | null;
+  generationReport: TailoringReport;
   createdAt?: string;
   updatedAt?: string;
 }
