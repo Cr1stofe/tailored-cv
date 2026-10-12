@@ -15,6 +15,28 @@ export function replaceLanguageContamination(
         .replace(/\bsecure cookies\b/gi, "Cookies HttpOnly");
 }
 
+export function preserveMasterProductNames(
+  text: string | null | undefined,
+  input: TailorResumeInput,
+): string {
+  if (!text) return "";
+  let result = text;
+  const rankingProject = input.masterProfile.projects.find(
+    (project) =>
+      project.name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase() === "ranking dos politicos",
+  );
+  if (rankingProject) {
+    result = result.replace(
+      /\b(?:Ranked Politicians|Ranking of Politicians)\b/gi,
+      rankingProject.name,
+    );
+  }
+  return result;
+}
+
 export function localizeTechnicalTerm(
   value: string,
   isEnglish: boolean,

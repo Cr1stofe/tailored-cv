@@ -358,6 +358,13 @@ export function profileText(profile: MasterProfileDto): string {
   return [
     profile.summary || "",
     ...profile.skills.map((skill) => skill.name),
+    ...(profile.educations || []).map(
+      (edu) =>
+        `${edu.institution} ${edu.degree || ""} ${edu.fieldOfStudy || ""}`,
+    ),
+    ...(profile.certifications || []).map(
+      (cert) => `${cert.name} ${cert.issuer}`,
+    ),
     ...profile.experiences.flatMap((experience) => [
       experience.position,
       experience.startDate,
@@ -418,7 +425,18 @@ export function extractNumbers(text: string): Set<string> {
   const matches = text.match(
     /\b\d+(?:[.,]\d+)?\s*\+?(?:\s*(?:%|mil(?:h(?:ão|oes|ões))?|thousands?|millions?|k|m|ms|s|anos?|years?|downloads?))?\+?/giu,
   );
-  return new Set((matches || []).map(canonicalNumber));
+  const numbers = new Set<string>();
+  for (const match of matches || []) {
+    const canonical = canonicalNumber(match);
+    numbers.add(canonical);
+    // A metric such as "1,4 s" and its English rendering "1.4"
+    // represent the same LCP value. Keep a unitless alias only for
+    // time units; percentages must remain strict.
+    if (canonical.endsWith("ms") || canonical.endsWith("s")) {
+      numbers.add(canonical.replace(/ms$|s$/i, ""));
+    }
+  }
+  return numbers;
 }
 
 export function tokenize(value: string): Set<string> {
@@ -512,4 +530,103 @@ export function removeTechnologyFromRole(
   return role
     .replace(new RegExp(`\\s*[-–—|/]?\\s*${escaped}\\s*$`, "i"), "")
     .trim();
+}
+
+export function profileCoversRequirement(
+  profile: MasterProfileDto,
+  requirement: string,
+): boolean {
+  const normReq = normalizeText(requirement);
+
+  if (/\b(ingles|english)\b/.test(normReq)) {
+    const hasEnglish =
+      (profile.certifications || []).some((c) =>
+        /\b(ingl[eê]s|english)\b/i.test(`${c.name} ${c.issuer}`),
+      ) ||
+      (profile.skills || []).some((s) =>
+        /\b(ingl[eê]s|english)\b/i.test(s.name),
+      ) ||
+      /\b(ingl[eê]s|english)\b/i.test(profile.summary || "");
+    if (hasEnglish) return true;
+  }
+  if (/\b(espanhol|spanish)\b/.test(normReq)) {
+    const hasSpanish =
+      (profile.certifications || []).some((c) =>
+        /\b(espanhol|spanish)\b/i.test(`${c.name} ${c.issuer}`),
+      ) ||
+      (profile.skills || []).some((s) =>
+        /\b(espanhol|spanish)\b/i.test(s.name),
+      ) ||
+      /\b(espanhol|spanish)\b/i.test(profile.summary || "");
+    if (hasSpanish) return true;
+  }
+
+  const normalizedRequirement = normalizeTechnology(requirement);
+  const technologies = masterTechnologySet(profile);
+  if (technologies.has(normalizedRequirement)) return true;
+
+  if (/\bhtml\b/.test(normReq) && technologies.has("html")) return true;
+  if (
+    /\bcss\b/.test(normReq) &&
+    (technologies.has("css") || technologies.has("scss"))
+  )
+    return true;
+  if (/\bjavascript\b/.test(normReq) && technologies.has("javascript"))
+    return true;
+  if (
+    /\b(?:apis?\s*)?rest\b/.test(normReq) &&
+    (technologies.has("apisrest") ||
+      technologies.has("apirest") ||
+      technologies.has("rest"))
+  )
+    return true;
+  if (/\bgit\b/.test(normReq) && technologies.has("git")) return true;
+  if (
+    /\b(?:testing\s*library|rtl)\b/.test(normReq) &&
+    technologies.has("testinglibrary")
+  )
+    return true;
+  if (
+    /\bcore\s*web\s*vitals\b/.test(normReq) &&
+    (technologies.has("corewebvitals") ||
+      profileText(profile).toLowerCase().includes("core web vitals"))
+  )
+    return true;
+
+  const mentionedProfileTechnologies = new Set<string>();
+  for (const [technology, pattern] of TECH_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(normReq)) mentionedProfileTechnologies.add(technology);
+  }
+  for (const technology of technologies) {
+    if (technology.length < 2) continue;
+    const escaped = technology.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(normReq)) {
+      mentionedProfileTechnologies.add(technology);
+    }
+  }
+
+  if (mentionedProfileTechnologies.size > 0) {
+    const hasAlternative = /\b(?:ou|or|either)\b/.test(normReq);
+    return hasAlternative
+      ? [...mentionedProfileTechnologies].some((technology) =>
+          technologies.has(technology),
+        )
+      : [...mentionedProfileTechnologies].every((technology) =>
+          technologies.has(technology),
+        );
+  }
+
+  const normalizedProfile = normalizeText(profileText(profile));
+  const tokens = normReq
+    .split(" ")
+    .filter((token) => token.length >= 3 && !STOP_WORDS.has(token));
+  if (
+    tokens.length > 0 &&
+    tokens.every((token) => normalizedProfile.includes(token))
+  ) {
+    return true;
+  }
+
+  return false;
 }

@@ -23,8 +23,8 @@ import {
   containsVerb,
   startsWithVerb,
   technologyAppearsInText,
+  profileCoversRequirement,
 } from "./core";
-import { findRelevantProfileSkills } from "./targeting";
 import {
   summaryEvidenceGaps,
   relevanceScore,
@@ -295,17 +295,26 @@ export function validateTailoredResume(
     }
   }
 
-  const missingRelevantSkills = findRelevantProfileSkills(input).filter(
-    (required) =>
-      !output.highlightedSkills.some(
-        (selected) =>
-          normalizeTechnology(selected) === normalizeTechnology(required),
-      ),
-  );
-  if (missingRelevantSkills.length > 0) {
+  const mandatoryTargetRequirements = (
+    input.jobAnalysis?.requiredSkills || []
+  ).filter((req) => profileCoversRequirement(input.masterProfile, req));
+
+  const missingMandatorySkills = mandatoryTargetRequirements.filter((req) => {
+    return !output.highlightedSkills.some((selected) => {
+      const normSelected = normalizeTechnology(selected);
+      const normReq = normalizeTechnology(req);
+      return (
+        normSelected === normReq ||
+        normalizeText(req).includes(normalizeText(selected)) ||
+        normalizeText(selected).includes(normalizeText(req))
+      );
+    });
+  });
+
+  if (missingMandatorySkills.length > 0) {
     errors.push({
       code: "MISSING_RELEVANT_SKILL",
-      message: `Competências comprovadas e mencionadas ou implicadas pela vaga ausentes de Competências: ${missingRelevantSkills.join(", ")}.`,
+      message: `Competências obrigatórias comprovadas da vaga ausentes de Competências: ${missingMandatorySkills.join(", ")}.`,
     });
   }
 

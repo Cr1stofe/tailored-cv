@@ -11,6 +11,7 @@ import {
   evaluateJobCompatibility,
   findRelevantProfileSkills,
   orderTailoredContentByRelevance,
+  profileCoversRequirement,
   synchronizeTailoredResume,
   validateTailoredResume,
 } from "./resume-quality";
@@ -111,6 +112,18 @@ describe("deterministic tailored resume quality", () => {
       expect.arrayContaining([
         expect.objectContaining({ code: "UNSUPPORTED_NUMBER" }),
       ]),
+    );
+  });
+
+  it("accepts an English decimal LCP value when the master uses a comma and seconds", () => {
+    const draft = validLuminaDraft();
+    draft.tailoredExperiences[0]!.reframedHighlights[0] +=
+      " LCP measured at 1.4.";
+
+    const result = validateTailoredResume(luminaFrontendFixture, draft);
+
+    expect(result.errors.map(({ code }) => code)).not.toContain(
+      "UNSUPPORTED_NUMBER",
     );
   });
 
@@ -519,6 +532,30 @@ describe("deterministic tailored resume quality", () => {
       };
       expect(buildTargetRole(inputEn, true)).toBe("Full Stack Developer");
     });
+
+    it("uses an English functional headline and removes duplicated translated bullets", () => {
+      const input = {
+        ...luminaFrontendFixture,
+        targetLanguage: "EN" as const,
+      };
+      const draft = validLuminaDraft();
+      draft.language = "EN";
+      draft.tailoredExperiences[0]!.reframedHighlights = [
+        "Motul Expert: Flutter app with over 100k downloads on Google Play. Restructured the solution with a focus on stability and performance.",
+        "Motul Expert: app Flutter com mais de 100 mil downloads no Google Play. Reestruturei a solução com foco em estabilidade e performance.",
+      ];
+
+      const synchronized = synchronizeTailoredResume(draft, input);
+
+      expect(synchronized.targetedHeadline).toBe("Frontend Developer");
+      expect(synchronized.targetedHeadline).not.toContain("Desenvolvedor");
+      expect(
+        synchronized.tailoredExperiences[0]!.reframedHighlights,
+      ).toHaveLength(1);
+      expect(
+        synchronized.tailoredExperiences[0]!.reframedHighlights[0],
+      ).toContain("over 100k downloads");
+    });
   });
 
   describe("project deduplication", () => {
@@ -644,6 +681,122 @@ describe("deterministic tailored resume quality", () => {
       );
       expect(incompRec).toBeDefined();
       expect(incompRec).toContain("Presencial ou Híbrida");
+    });
+
+    it("correctly matches qualified job requirements with candidate master skills", () => {
+      const profile = {
+        ...luminaFrontendFixture.masterProfile,
+        certifications: [
+          ...luminaFrontendFixture.masterProfile.certifications,
+          {
+            name: "Inglês: Intermediário",
+            issuer: "Proficiência Profissional",
+          },
+        ],
+      };
+
+      expect(
+        profileCoversRequirement(profile, "JavaScript moderno (ES6+)"),
+      ).toBe(true);
+      expect(profileCoversRequirement(profile, "HTML semântico")).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Conhecimento de HTML semântico, CSS e pré-processadores (Sass ou CSS Modules)",
+        ),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Experiência com gerenciamento de estado (Redux, Zustand ou Context API)",
+        ),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Familiaridade com Git e fluxos de pull request",
+        ),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(profile, "Experiência consumindo APIs REST"),
+      ).toBe(true);
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Inglês para leitura de documentação",
+        ),
+      ).toBe(true);
+    });
+
+    it("does not infer PostgreSQL or Docker for frontend roles mentioning backend collaboration", () => {
+      const frontendJobInput = {
+        company: "Lumina Pagamentos",
+        position: "Desenvolvedor(a) Front-end Pleno (React / TypeScript)",
+        jobDescription:
+          "Trabalhar junto com pessoas de produto, design e back-end em ciclos de duas semanas. Noções de CI/CD (GitHub Actions).",
+        targetLanguage: "PT" as const,
+        masterProfile: luminaFrontendFixture.masterProfile,
+        jobAnalysis: {
+          applicationId: "test-application",
+          summary: "Vaga Frontend.",
+          requiredSkills: ["React", "TypeScript", "JavaScript"],
+          desiredSkills: ["Next.js", "GitHub Actions"],
+          keyResponsibilities: [],
+          keywords: ["React", "TypeScript"],
+          matchScore: 90,
+          matchingSkills: ["React", "TypeScript", "JavaScript"],
+          missingSkills: [],
+          strategicRecommendations: [],
+        },
+      };
+
+      const skills = findRelevantProfileSkills(frontendJobInput);
+      expect(skills).not.toContain("PostgreSQL");
+      expect(skills).not.toContain("Docker");
+
+      const draft = validLuminaDraft();
+      draft.highlightedSkills = [
+        "React",
+        "TypeScript",
+        "JavaScript",
+        "Next.js",
+        "CSS",
+        "HTML",
+        "Zustand",
+        "Git",
+      ];
+      const validation = validateTailoredResume(frontendJobInput, draft);
+      const missingSkillErrors = validation.errors.filter(
+        (e) => e.code === "MISSING_RELEVANT_SKILL",
+      );
+      expect(missingSkillErrors).toEqual([]);
+    });
+
+    it("does not treat a generated English CV as proof of English proficiency", () => {
+      const profile = structuredClone(luminaFrontendFixture.masterProfile);
+      profile.englishCv = structuredClone(profile);
+      profile.certifications = [];
+      profile.skills = profile.skills.filter(
+        (skill) => !/\b(ingl[eê]s|english)\b/i.test(skill.name),
+      );
+
+      expect(profileCoversRequirement(profile, "Inglês para leitura")).toBe(
+        false,
+      );
+    });
+
+    it("does not treat one covered technology as coverage of a multi-technology requirement", () => {
+      const profile = structuredClone(luminaFrontendFixture.masterProfile);
+      profile.skills = profile.skills.filter(
+        (skill) => !/\b(?:aws|kubernetes)\b/i.test(skill.name),
+      );
+
+      expect(
+        profileCoversRequirement(
+          profile,
+          "Experiência com React, Kubernetes e AWS em produção",
+        ),
+      ).toBe(false);
     });
   });
 });

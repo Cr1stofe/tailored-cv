@@ -287,6 +287,7 @@ export function localizeResumeProjectName(
         ],
         [/\bplataforma de ensino\b/gi, "E-Learning Platform"],
         [/\bplataforma educacional\b/gi, "Educational Platform"],
+        [/\bportfólio pessoal\b/gi, "Personal Portfolio"],
         [/\baplicação web\b/gi, "Web Application"],
       ]
     : [
@@ -296,6 +297,7 @@ export function localizeResumeProjectName(
         ],
         [/\be-learning platform\b/gi, "Plataforma de ensino"],
         [/\beducational platform\b/gi, "Plataforma educacional"],
+        [/\bpersonal portfolio\b/gi, "Portfólio Pessoal"],
         [/\bweb application\b/gi, "Aplicação web"],
       ];
 

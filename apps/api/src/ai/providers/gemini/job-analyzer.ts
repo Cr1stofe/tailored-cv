@@ -27,9 +27,17 @@ PERFIL DO CANDIDATO (MASTER PROFILE):
 """
 Resumo: ${input.masterProfile.summary || "Não informado"}
 Competências cadastradas: ${input.masterProfile.skills.map((s) => `${s.name} (${s.category})`).join(", ")}
+Certificações / Idiomas: ${(input.masterProfile.certifications || []).map((c) => `${c.name} (${c.issuer})`).join(", ") || "Não informado"}
 Experiências: ${input.masterProfile.experiences.map((e) => `${e.position} em ${e.company} [${e.technologies.join(", ")}]`).join("; ")}
 Projetos: ${input.masterProfile.projects.map((p) => `${p.name} [${p.technologies.join(", ")}] — ${p.highlights.join("; ")}`).join("; ")}
 """
+
+DIRETRIZES DE MATCHING:
+- Considere que o candidato possui "JavaScript moderno (ES6+)" se tiver "JavaScript" comprovado.
+- Considere que possui "HTML semântico" se tiver "HTML" comprovado.
+- Considere atendido requisito de idiomas (ex: "Inglês para leitura/documentação") se o idioma estiver cadastrado.
+- Se a vaga listar alternativas (ex: "Redux, Zustand ou Context API") e o candidato possuir uma delas (ex: Zustand), considere como matchingSkill e NÃO como missingSkill.
+- Não liste em missingSkills competências que o candidato atende direta ou conceitualmente.
 
 Retorne EXCLUSIVAMENTE um objeto JSON válido, sem comentários, sem markdown e com todas as chaves e strings entre aspas duplas, seguindo esta estrutura:
 {

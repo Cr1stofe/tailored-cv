@@ -6,6 +6,7 @@ export type {
 export {
   findUnsupportedTechnologies,
   normalizeTechnology,
+  profileCoversRequirement,
 } from "./resume-quality/core";
 export {
   buildTargetRole,
