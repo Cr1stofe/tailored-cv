@@ -1,6 +1,8 @@
+import "./observability/instrument";
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe, Logger } from "@nestjs/common";
+import { ValidationPipe, Logger as NestLogger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Logger as PinoNestLogger } from "nestjs-pino";
 import cookieParser from "cookie-parser";
 import express from "express";
 import type { NextFunction, Request, Response } from "express";
@@ -9,14 +11,22 @@ import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { InMemoryRateLimiter } from "./common/security/rate-limit";
 
 async function bootstrap(): Promise<void> {
-  const logger = new Logger("Bootstrap");
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const logger = new NestLogger("Bootstrap");
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(PinoNestLogger));
 
   app.enableShutdownHooks();
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
   app.use(express.json({ limit: "256kb" }));
   app.use(express.urlencoded({ extended: false, limit: "64kb" }));
   app.use((req: Request, res: Response, next: NextFunction) => {
+    const requestId = (req as Request & { id?: string }).id;
+    if (requestId) {
+      res.setHeader("X-Request-Id", requestId);
+    }
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -77,14 +87,14 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(app.get(AllExceptionsFilter));
 
   await app.listen(port, "0.0.0.0");
   logger.log(`Tailored CV API running on port ${port}`);
 }
 
 bootstrap().catch((err: unknown) => {
-  const logger = new Logger("BootstrapError");
+  const logger = new NestLogger("BootstrapError");
   logger.error(
     "Failed to start application",
     err instanceof Error ? err.stack : err,

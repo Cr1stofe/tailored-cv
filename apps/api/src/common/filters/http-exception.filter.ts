@@ -1,17 +1,24 @@
 import {
   ExceptionFilter,
   Catch,
-  ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
+  Injectable,
 } from "@nestjs/common";
+import type { ArgumentsHost } from "@nestjs/common";
+import { SentryExceptionCaptured } from "@sentry/nestjs";
 import { Request, Response } from "express";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 
+@Injectable()
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+  constructor(
+    @InjectPinoLogger(AllExceptionsFilter.name)
+    private readonly logger: PinoLogger,
+  ) {}
 
+  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -40,9 +47,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
 
+    const requestId = request.id?.toString();
     this.logger.error(
-      `HTTP ${status} on ${request.method} ${request.url}`,
-      exception instanceof Error ? exception.stack : undefined,
+      {
+        event: "http.request.failed",
+        requestId,
+        method: request.method,
+        path: request.path,
+        status,
+        exceptionType:
+          exception instanceof Error ? exception.constructor.name : "Unknown",
+      },
+      "HTTP request failed",
     );
 
     response.status(status).json({

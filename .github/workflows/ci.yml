@@ -49,6 +49,11 @@ jobs:
           cp .env.example .env
           docker compose -f compose.yaml config --quiet
           docker compose -f compose.dev.yaml config --quiet
+          docker compose \
+            -f compose.yaml \
+            -f compose.observability.yaml \
+            --profile observability \
+            config --quiet
 
       - name: Build applications
         run: pnpm build

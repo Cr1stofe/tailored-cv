@@ -10,6 +10,10 @@ import { JobApplicationModule } from "./job-application/job-application.module";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
 import { AuthGuard } from "./common/guards/auth.guard";
+import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
+import { ObservabilityLoggerModule } from "./observability/observability.logger";
+import { ObservabilityModule } from "./observability/observability.module";
+import { SentryModule } from "@sentry/nestjs/setup";
 
 @Module({
   imports: [
@@ -23,8 +27,12 @@ import { AuthGuard } from "./common/guards/auth.guard";
     AIModule,
     ProfileModule,
     JobApplicationModule,
+    ObservabilityLoggerModule,
+    ObservabilityModule,
+    SentryModule.forRoot(),
   ],
   providers: [
+    AllExceptionsFilter,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
