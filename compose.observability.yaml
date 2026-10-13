@@ -39,7 +39,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     ports:
-      - "127.0.0.1:${GRAFANA_PORT:-3002}:3000"
+      - "127.0.0.1:${GRAFANA_PORT:?Defina GRAFANA_PORT no .env}:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
