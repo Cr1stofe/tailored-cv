@@ -7,6 +7,7 @@ import {
   SupportedLanguage,
   PaginatedResult,
   JobApplicationFiltersDto,
+  TailoringGenerationDto,
 } from "@tailored-cv/types";
 import { CreateJobApplicationInput } from "@tailored-cv/validation";
 
@@ -116,10 +117,14 @@ export const api = {
       method: "POST",
     }),
   tailorResume: (id: string, targetLanguage?: SupportedLanguage) =>
-    request<TailoredResumeDto>(`/job-applications/${id}/tailor`, {
+    request<TailoringGenerationDto>(`/job-applications/${id}/tailor`, {
       method: "POST",
       body: JSON.stringify({ targetLanguage }),
     }),
+  getTailoringStatus: (id: string, language?: SupportedLanguage) =>
+    request<TailoringGenerationDto>(
+      `/job-applications/${id}/tailor/status${language ? `?language=${language}` : ""}`,
+    ),
   getTailoredResume: (id: string) =>
     request<TailoredResumeDto>(`/job-applications/${id}/tailored-resume`),
   updateTailoredResume: (

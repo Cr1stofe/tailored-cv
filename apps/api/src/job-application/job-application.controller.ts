@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -17,12 +19,14 @@ import type {
   TailoredResumeDto,
   SupportedLanguage,
   JobApplicationFiltersDto,
+  TailoringGenerationDto,
 } from "@tailored-cv/types";
 import {
   createJobApplicationSchema,
   tailorResumeRequestSchema,
   tailoredResumeFormSchema,
   updateJobApplicationStatusSchema,
+  tailoringStatusQuerySchema,
 } from "@tailored-cv/validation";
 import { ZodValidationPipe } from "../common/pipes";
 
@@ -68,14 +72,24 @@ export class JobApplicationController {
   }
 
   @Post(":id/tailor")
+  @HttpCode(HttpStatus.ACCEPTED)
   async tailor(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(tailorResumeRequestSchema))
     body: { targetLanguage?: SupportedLanguage },
-  ) {
+  ): Promise<TailoringGenerationDto> {
     return this.jobApplicationService.tailor(id, {
       targetLanguage: body.targetLanguage,
     });
+  }
+
+  @Get(":id/tailor/status")
+  async getTailoringStatus(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Query(new ZodValidationPipe(tailoringStatusQuerySchema))
+    query: { language?: SupportedLanguage },
+  ): Promise<TailoringGenerationDto> {
+    return this.jobApplicationService.getTailoringStatus(id, query.language);
   }
 
   @Get(":id/tailored-resume")

@@ -12,13 +12,14 @@ import {
   SupportedLanguage,
   PaginatedResult,
   JobApplicationFiltersDto,
+  TailoringGenerationDto,
 } from "@tailored-cv/types";
 import {
   CreateJobApplicationInput,
   localizeResumeProjectName,
-  sanitizeHeadline,
 } from "@tailored-cv/validation";
 import { Prisma } from "@prisma/client";
+import { TailoringGenerationService } from "./tailoring-generation.service";
 
 @Injectable()
 export class JobApplicationService {
@@ -26,6 +27,7 @@ export class JobApplicationService {
     private readonly prisma: PrismaService,
     private readonly profileService: ProfileService,
     private readonly aiService: AIService,
+    private readonly tailoringGenerationService?: TailoringGenerationService,
   ) {}
 
   async findAll(
@@ -254,76 +256,26 @@ export class JobApplicationService {
   async tailor(
     id: string,
     options?: { targetLanguage?: SupportedLanguage },
-  ): Promise<TailoredResumeDto> {
-    const application = await this.findById(id);
-    const masterProfile = await this.profileService.getProfile();
-    const targetLanguage: SupportedLanguage =
-      options?.targetLanguage || application.targetLanguage || "PT";
+  ): Promise<TailoringGenerationDto> {
+    if (!this.tailoringGenerationService) {
+      throw new Error("Tailoring generation service is not configured");
+    }
 
-    const tailorOutput = await this.aiService.tailorResume({
-      company: application.company,
-      position: application.position,
-      jobDescription: application.jobDescription,
-      // PT is the canonical source of facts for both languages. The model
-      // translates the selected text, but must never receive a second profile
-      // whose projects/experiences can drift from the original.
-      masterProfile,
-      jobAnalysis: application.jobAnalysis || undefined,
-      targetLanguage,
-    });
+    return this.tailoringGenerationService.enqueue(
+      id,
+      options?.targetLanguage,
+    );
+  }
 
-    const existingCount = await this.prisma.tailoredResume.count({
-      where: { applicationId: id },
-    });
+  async getTailoringStatus(
+    id: string,
+    targetLanguage?: SupportedLanguage,
+  ): Promise<TailoringGenerationDto> {
+    if (!this.tailoringGenerationService) {
+      throw new Error("Tailoring generation service is not configured");
+    }
 
-    const createdResume = await this.prisma.tailoredResume.create({
-      data: {
-        applicationId: id,
-        version: existingCount + 1,
-        title: tailorOutput.title,
-        language: targetLanguage,
-        targetedHeadline: sanitizeHeadline(tailorOutput.targetedHeadline),
-        reframedSummary: tailorOutput.reframedSummary,
-        highlightedSkills: tailorOutput.highlightedSkills,
-        tailoredExperiences:
-          tailorOutput.tailoredExperiences as unknown as Prisma.InputJsonValue,
-        tailoredProjects: tailorOutput.tailoredProjects
-          ? (tailorOutput.tailoredProjects as unknown as Prisma.InputJsonValue)
-          : Prisma.JsonNull,
-        generationReport:
-          tailorOutput.generationReport as unknown as Prisma.InputJsonValue,
-      },
-    });
-
-    await this.prisma.jobApplication.update({
-      where: { id },
-      data: {
-        status: "TAILORED",
-        targetLanguage,
-      },
-    });
-
-    return {
-      id: createdResume.id,
-      applicationId: createdResume.applicationId,
-      version: createdResume.version,
-      title: createdResume.title,
-      language: (createdResume.language as SupportedLanguage) || "PT",
-      targetedHeadline: createdResume.targetedHeadline,
-      reframedSummary: createdResume.reframedSummary,
-      highlightedSkills: createdResume.highlightedSkills,
-      tailoredExperiences:
-        createdResume.tailoredExperiences as unknown as TailoredExperienceItem[],
-      tailoredProjects: this.mapTailoredProjects(
-        createdResume.tailoredProjects,
-        targetLanguage,
-      ),
-      generationReport: this.mapGenerationReport(
-        createdResume.generationReport,
-      ),
-      createdAt: createdResume.createdAt.toISOString(),
-      updatedAt: createdResume.updatedAt.toISOString(),
-    };
+    return this.tailoringGenerationService.getStatus(id, targetLanguage);
   }
 
   async getTailoredResume(applicationId: string): Promise<TailoredResumeDto> {

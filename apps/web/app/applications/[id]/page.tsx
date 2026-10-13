@@ -10,6 +10,7 @@ import {
   JobApplicationDto,
   TailoredResumeDto,
   MasterProfileDto,
+  TailoringGenerationDto,
 } from "@tailored-cv/types";
 import type { TailoredResumeFormInput } from "@tailored-cv/validation";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
@@ -45,6 +46,8 @@ export default function ApplicationDetailPage({
   const [loadError, setLoadError] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
+  const [tailoringGeneration, setTailoringGeneration] =
+    useState<TailoringGenerationDto | null>(null);
 
   const [isEditingResume, setIsEditingResume] = useState(false);
   const [isSavingResume, setIsSavingResume] = useState(false);
@@ -72,6 +75,64 @@ export default function ApplicationDetailPage({
     loadData();
   }, [id]);
 
+  useEffect(() => {
+    if (
+      !tailoringGeneration ||
+      !["QUEUED", "PROCESSING"].includes(tailoringGeneration.status)
+    ) {
+      return;
+    }
+
+    const poll = window.setInterval(async () => {
+      try {
+        const latest = await api.getTailoringStatus(
+          id,
+          tailoringGeneration.targetLanguage,
+        );
+        setTailoringGeneration(latest);
+
+        if (latest.status === "COMPLETED") {
+          const updated = await api.getApplicationById(id);
+          const savedResume = (updated.tailoredResumes || []).find(
+            (resume) => resume.language === latest.targetLanguage,
+          );
+          setApplication(updated);
+          setTailoredResumes(updated.tailoredResumes || []);
+          setTailoredResume(savedResume || null);
+          setIsTailoring(false);
+          setActiveTab("resume");
+          toast.success(
+            latest.targetLanguage === "EN"
+              ? "Currículo adaptado em inglês com sucesso!"
+              : "Currículo adaptado em português com sucesso!",
+          );
+        }
+
+        if (latest.status === "FAILED") {
+          setIsTailoring(false);
+          toast.error(
+            latest.errorMessage || "Não foi possível gerar o currículo.",
+          );
+        }
+      } catch {
+        // A temporary polling failure should not interrupt the worker.
+      }
+    }, 2_500);
+
+    return () => window.clearInterval(poll);
+  }, [id, tailoringGeneration]);
+
+  async function loadTailoringStatus(language: "PT" | "EN") {
+    try {
+      const generation = await api.getTailoringStatus(id, language);
+      setTailoringGeneration(generation);
+      setIsTailoring(["QUEUED", "PROCESSING"].includes(generation.status));
+    } catch {
+      setTailoringGeneration(null);
+      setIsTailoring(false);
+    }
+  }
+
   async function loadData() {
     setIsLoading(true);
     setLoadError(false);
@@ -93,6 +154,8 @@ export default function ApplicationDetailPage({
           (resume) => resume.language === appData.targetLanguage,
         ) || savedResumes[0];
 
+      const initialLanguage = preferredResume?.language || appData.targetLanguage || "PT";
+
       if (preferredResume) {
         setTailoredResume(preferredResume);
         setTailorLanguage(preferredResume.language);
@@ -100,6 +163,7 @@ export default function ApplicationDetailPage({
       } else if (appData.jobAnalysis) {
         setActiveTab("analysis");
       }
+      await loadTailoringStatus(initialLanguage);
     } catch {
       setLoadError(true);
       toast.error("Erro ao carregar dados da candidatura");
@@ -117,6 +181,7 @@ export default function ApplicationDetailPage({
     setIsEditingResume(false);
     setTailoredResume(savedResume || null);
     setActiveTab("resume");
+    void loadTailoringStatus(language);
   };
 
   const handleAnalyze = async () => {
@@ -139,21 +204,12 @@ export default function ApplicationDetailPage({
   const handleTailor = async () => {
     setIsTailoring(true);
     try {
-      const resume = await api.tailorResume(id, tailorLanguage);
-      setTailoredResume(resume);
-      setTailoredResumes((current) => [
-        resume,
-        ...current.filter((item) => item.language !== resume.language),
-      ]);
+      const generation = await api.tailorResume(id, tailorLanguage);
+      setTailoringGeneration(generation);
       setIsEditingResume(false);
-      const updated = await api.getApplicationById(id);
-      setApplication(updated);
-      setTailoredResumes(updated.tailoredResumes || []);
       setActiveTab("resume");
-      toast.success(
-        tailorLanguage === "EN"
-          ? "Currículo adaptado em inglês com sucesso!"
-          : "Currículo adaptado em português com sucesso!",
+      toast.info(
+        "A geração foi iniciada. Você pode continuar navegando; avisaremos quando o currículo estiver pronto.",
       );
     } catch (err) {
       toast.error(
@@ -265,6 +321,23 @@ export default function ApplicationDetailPage({
         onPrint={handlePrint}
         onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
       />
+
+      {tailoringGeneration &&
+        ["QUEUED", "PROCESSING"].includes(tailoringGeneration.status) && (
+          <div
+            className={styles.generationStatus}
+            role="status"
+            aria-live="polite"
+          >
+            <span className={styles.loadingSpinner} aria-hidden="true" />
+            <span>
+              {tailoringGeneration.status === "QUEUED"
+                ? "Geração na fila..."
+                : "Gerando currículo com IA..."}
+            </span>
+            <small>Você pode continuar navegando enquanto processamos.</small>
+          </div>
+        )}
 
       <div className={`${styles.tabs} no-print`}>
         <button
