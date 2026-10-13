@@ -11,6 +11,7 @@ import {
   TailoredResumeDto,
   MasterProfileDto,
   TailoringGenerationDto,
+  AnalysisGenerationDto,
 } from "@tailored-cv/types";
 import type { TailoredResumeFormInput } from "@tailored-cv/validation";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
@@ -46,6 +47,8 @@ export default function ApplicationDetailPage({
   const [loadError, setLoadError] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
+  const [analysisGeneration, setAnalysisGeneration] =
+    useState<AnalysisGenerationDto | null>(null);
   const [tailoringGeneration, setTailoringGeneration] =
     useState<TailoringGenerationDto | null>(null);
 
@@ -122,6 +125,52 @@ export default function ApplicationDetailPage({
     return () => window.clearInterval(poll);
   }, [id, tailoringGeneration]);
 
+  useEffect(() => {
+    if (
+      !analysisGeneration ||
+      !["QUEUED", "PROCESSING"].includes(analysisGeneration.status)
+    ) {
+      return;
+    }
+
+    const poll = window.setInterval(async () => {
+      try {
+        const latest = await api.getAnalysisStatus(id);
+        setAnalysisGeneration(latest);
+
+        if (latest.status === "COMPLETED") {
+          const updated = await api.getApplicationById(id);
+          setApplication(updated);
+          setIsAnalyzing(false);
+          setActiveTab("analysis");
+          toast.success("Análise de vaga realizada com sucesso!");
+        }
+
+        if (latest.status === "FAILED") {
+          setIsAnalyzing(false);
+          toast.error(
+            latest.errorMessage || "Não foi possível analisar a vaga.",
+          );
+        }
+      } catch {
+        // A temporary polling failure should not interrupt the worker.
+      }
+    }, 2_500);
+
+    return () => window.clearInterval(poll);
+  }, [id, analysisGeneration]);
+
+  async function loadAnalysisStatus() {
+    try {
+      const generation = await api.getAnalysisStatus(id);
+      setAnalysisGeneration(generation);
+      setIsAnalyzing(["QUEUED", "PROCESSING"].includes(generation.status));
+    } catch {
+      setAnalysisGeneration(null);
+      setIsAnalyzing(false);
+    }
+  }
+
   async function loadTailoringStatus(language: "PT" | "EN") {
     try {
       const generation = await api.getTailoringStatus(id, language);
@@ -164,6 +213,7 @@ export default function ApplicationDetailPage({
       } else if (appData.jobAnalysis) {
         setActiveTab("analysis");
       }
+      await loadAnalysisStatus();
       await loadTailoringStatus(initialLanguage);
     } catch {
       setLoadError(true);
@@ -188,17 +238,17 @@ export default function ApplicationDetailPage({
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
-      await api.analyzeJob(id);
-      const updated = await api.getApplicationById(id);
-      setApplication(updated);
+      const generation = await api.analyzeJob(id);
+      setAnalysisGeneration(generation);
       setActiveTab("analysis");
-      toast.success("Análise de vaga realizada com sucesso!");
+      toast.info(
+        "A análise foi iniciada. Você pode continuar navegando enquanto processamos.",
+      );
     } catch (err) {
+      setIsAnalyzing(false);
       toast.error(
         err instanceof Error ? err.message : "Falha na análise da vaga",
       );
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -335,6 +385,23 @@ export default function ApplicationDetailPage({
               {tailoringGeneration.status === "QUEUED"
                 ? "Geração na fila..."
                 : "Gerando currículo com IA..."}
+            </span>
+            <small>Você pode continuar navegando enquanto processamos.</small>
+          </div>
+        )}
+
+      {analysisGeneration &&
+        ["QUEUED", "PROCESSING"].includes(analysisGeneration.status) && (
+          <div
+            className={styles.generationStatus}
+            role="status"
+            aria-live="polite"
+          >
+            <span className={styles.loadingSpinner} aria-hidden="true" />
+            <span>
+              {analysisGeneration.status === "QUEUED"
+                ? "Análise na fila..."
+                : "Analisando requisitos da vaga..."}
             </span>
             <small>Você pode continuar navegando enquanto processamos.</small>
           </div>

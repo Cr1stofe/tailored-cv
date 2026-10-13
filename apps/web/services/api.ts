@@ -2,12 +2,12 @@ import {
   MasterProfileDto,
   JobApplicationDto,
   TailoredResumeDto,
-  JobAnalysisDto,
   ApplicationStatus,
   SupportedLanguage,
   PaginatedResult,
   JobApplicationFiltersDto,
   TailoringGenerationDto,
+  AnalysisGenerationDto,
 } from "@tailored-cv/types";
 import { CreateJobApplicationInput } from "@tailored-cv/validation";
 
@@ -113,9 +113,11 @@ export const api = {
     }),
 
   analyzeJob: (id: string) =>
-    request<JobAnalysisDto>(`/job-applications/${id}/analyze`, {
+    request<AnalysisGenerationDto>(`/job-applications/${id}/analyze`, {
       method: "POST",
     }),
+  getAnalysisStatus: (id: string) =>
+    request<AnalysisGenerationDto>(`/job-applications/${id}/analyze/status`),
   tailorResume: (id: string, targetLanguage?: SupportedLanguage) =>
     request<TailoringGenerationDto>(`/job-applications/${id}/tailor`, {
       method: "POST",
