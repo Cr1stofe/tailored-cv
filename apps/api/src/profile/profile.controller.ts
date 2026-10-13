@@ -16,7 +16,7 @@ import {
 @ApiTags("Profile")
 @ApiCookieAuth("sid")
 @ApiCookieAuth("__Secure-sid")
-@ApiBearerAuth()
+@ApiBearerAuth("sessionToken")
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 

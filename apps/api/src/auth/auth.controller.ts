@@ -99,7 +99,7 @@ export class AuthController {
   @ApiOperation({ summary: "Get the current authenticated session" })
   @ApiCookieAuth("sid")
   @ApiCookieAuth("__Secure-sid")
-  @ApiBearerAuth()
+  @ApiBearerAuth("sessionToken")
   @ApiResponse({ status: 200, description: "Authenticated session details." })
   @ApiResponse({ status: 401, description: "Authentication required." })
   getSession(@CurrentUser() session: SessionData) {

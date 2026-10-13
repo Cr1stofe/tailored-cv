@@ -2,7 +2,7 @@ import "./observability/instrument";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, Logger as NestLogger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { SwaggerModule } from "@nestjs/swagger";
 import { Logger as PinoNestLogger } from "nestjs-pino";
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -10,6 +10,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { InMemoryRateLimiter } from "./common/security/rate-limit";
+import { createSwaggerConfig } from "./swagger.config";
 
 async function bootstrap(): Promise<void> {
   const logger = new NestLogger("Bootstrap");
@@ -96,18 +97,8 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(app.get(AllExceptionsFilter));
 
   if (swaggerEnabled) {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle("Tailored CV API")
-      .setDescription(
-        "API for analyzing job opportunities and generating faithful, tailored resumes.",
-      )
-      .setVersion("1.0")
-      .addCookieAuth("sid")
-      .addCookieAuth("__Secure-sid")
-      .addBearerAuth()
-      .build();
     const documentFactory = () =>
-      SwaggerModule.createDocument(app, swaggerConfig);
+      SwaggerModule.createDocument(app, createSwaggerConfig());
 
     SwaggerModule.setup("docs", app, documentFactory, {
       jsonDocumentUrl: "docs/openapi.json",

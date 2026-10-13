@@ -44,12 +44,37 @@ import {
 @ApiTags("Job applications")
 @ApiCookieAuth("sid")
 @ApiCookieAuth("__Secure-sid")
-@ApiBearerAuth()
+@ApiBearerAuth("sessionToken")
 export class JobApplicationController {
   constructor(private readonly jobApplicationService: JobApplicationService) {}
 
   @Get()
   @ApiOperation({ summary: "List job applications" })
+  @ApiQuery({ name: "page", required: false, type: Number, example: 1 })
+  @ApiQuery({ name: "limit", required: false, type: Number, example: 12 })
+  @ApiQuery({
+    name: "search",
+    required: false,
+    type: String,
+    description: "Search company, position, location, or job description.",
+  })
+  @ApiQuery({
+    name: "status",
+    required: false,
+    enum: ["DRAFT", "ANALYZED", "TAILORED"],
+  })
+  @ApiQuery({
+    name: "stack",
+    required: false,
+    type: String,
+    description:
+      "Stack category filter, such as FULLSTACK, FRONTEND, BACKEND, MOBILE, or DEVOPS.",
+  })
+  @ApiQuery({
+    name: "sortBy",
+    required: false,
+    enum: ["newest", "oldest", "match_desc", "match_asc", "company_asc"],
+  })
   async findAll(@Query() query: JobApplicationFiltersDto) {
     return this.jobApplicationService.findAll(query);
   }
@@ -141,7 +166,6 @@ export class JobApplicationController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: "Queue tailored resume generation" })
   @ApiBody({
-    required: false,
     schema: {
       type: "object",
       properties: {
