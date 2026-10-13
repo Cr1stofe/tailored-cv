@@ -126,12 +126,16 @@
 .langBadge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
+  padding: 0.35rem 0.6rem;
   border-radius: $radius-full;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
   background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
   border: 1px solid rgba(59, 130, 246, 0.35);
@@ -187,8 +191,18 @@
   gap: 0.45rem;
 
   @media screen and (max-width: 640px) {
+    width: auto;
+    min-width: 0;
+    grid-column: auto;
+    justify-content: flex-end;
+    justify-self: end;
+  }
+
+  @media screen and (max-width: 360px) {
     width: 100%;
+    grid-column: 1 / -1;
     justify-content: center;
+    justify-self: stretch;
   }
 }
 
@@ -200,7 +214,8 @@
 
   @media screen and (max-width: 640px) {
     width: 100%;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
   }
 }
@@ -220,6 +235,8 @@
   @media screen and (max-width: 640px) {
     width: 100%;
     justify-content: center;
+    min-width: 0;
+    padding-inline: 0.65rem;
   }
 
   &.secondary {

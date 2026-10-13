@@ -11,6 +11,8 @@ import {
   Sparkles,
   LogIn,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, UserSessionDto } from "@/services/api";
@@ -21,6 +23,7 @@ export function Navbar() {
   const router = useRouter();
   const [session, setSession] = useState<UserSessionDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const checkSession = useCallback(async () => {
     try {
@@ -37,7 +40,12 @@ export function Navbar() {
     checkSession();
   }, [pathname, checkSession]);
 
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
+    setIsMenuOpen(false);
     try {
       await api.logout();
       setSession(null);
@@ -64,11 +72,26 @@ export function Navbar() {
           <span className={styles.badge}>Never invent. Only reframe.</span>
         </div>
 
-        <nav className={styles.nav}>
+        {session && (
+          <button
+            type="button"
+            className={styles.menuToggle}
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        )}
+
+        <nav
+          className={`${styles.nav} ${isMenuOpen ? styles.navOpen : ""} ${!session ? styles.guestNav : ""}`}
+        >
           {session ? (
             <>
               <Link
                 href="/"
+                onClick={() => setIsMenuOpen(false)}
                 className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
                 title="Dashboard"
                 aria-label="Dashboard"
@@ -80,6 +103,7 @@ export function Navbar() {
 
               <Link
                 href="/profile"
+                onClick={() => setIsMenuOpen(false)}
                 className={`${styles.navLink} ${pathname.startsWith("/profile") ? styles.active : ""}`}
                 title="Master Profile"
                 aria-label="Perfil"
@@ -93,6 +117,7 @@ export function Navbar() {
 
               <Link
                 href="/applications"
+                onClick={() => setIsMenuOpen(false)}
                 className={`${styles.navLink} ${pathname === "/applications" ? styles.active : ""}`}
                 title="Candidaturas"
                 aria-label="Candidaturas"
@@ -104,6 +129,7 @@ export function Navbar() {
 
               <Link
                 href="/applications/new"
+                onClick={() => setIsMenuOpen(false)}
                 className={styles.newButton}
                 title="Nova Vaga"
                 aria-label="Nova candidatura"

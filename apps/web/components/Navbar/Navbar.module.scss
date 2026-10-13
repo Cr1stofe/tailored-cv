@@ -81,6 +81,25 @@
   }
 }
 
+.menuToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid $border-subtle;
+  border-radius: $radius-sm;
+  color: $text-secondary;
+  cursor: pointer;
+
+  &:hover {
+    color: $text-primary;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
 .navLink {
   display: flex;
   align-items: center;
@@ -96,7 +115,7 @@
     padding: 0.5rem 0.65rem;
   }
 
-  @media screen and (max-width: 540px) {
+  @media screen and (max-width: 640px) {
     padding: 0.5rem;
 
     .navText {
@@ -137,7 +156,7 @@
     padding: 0.5rem 0.75rem;
   }
 
-  @media screen and (max-width: 540px) {
+  @media screen and (max-width: 640px) {
     padding: 0.5rem;
 
     .newButtonText {
@@ -210,6 +229,71 @@
     .logoutText {
       display: none;
     }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .container {
+    position: relative;
+  }
+
+  .menuToggle {
+    display: inline-flex;
+  }
+
+  .nav {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+    min-width: 12rem;
+    padding: 0.5rem;
+    background: rgba(10, 13, 20, 0.98);
+    border: 1px solid $border-subtle;
+    border-radius: $radius-md;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+
+    &.navOpen {
+      display: flex;
+    }
+
+    &.guestNav {
+      display: flex;
+      position: static;
+      min-width: auto;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      background: transparent;
+    }
+  }
+
+  .navLink,
+  .newButton,
+  .logoutButton {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.65rem 0.75rem;
+
+    .navText,
+    .newButtonText,
+    .logoutText {
+      display: inline;
+    }
+  }
+
+  .newButton {
+    margin-left: 0;
+  }
+
+  .userArea {
+    margin: 0.25rem 0 0;
+    padding: 0.35rem 0 0;
+    border-left: none;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
   }
 }
 
