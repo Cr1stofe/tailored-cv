@@ -23,8 +23,17 @@ import { LoginDto } from "./dto/login.dto";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { AuthGuard } from "../common/guards/auth.guard";
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 
 @Controller("auth")
+@ApiTags("Authentication")
 @UseGuards(AuthGuard)
 export class AuthController {
   constructor(
@@ -35,6 +44,23 @@ export class AuthController {
   @Public()
   @Post("login")
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Create a user session" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["email", "password"],
+      properties: {
+        email: { type: "string", format: "email", example: "user@example.com" },
+        password: {
+          type: "string",
+          format: "password",
+          example: "your-password",
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: "Session created successfully." })
+  @ApiResponse({ status: 401, description: "Invalid credentials." })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -56,6 +82,11 @@ export class AuthController {
   @Public()
   @Delete("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "End the current user session" })
+  @ApiResponse({
+    status: 204,
+    description: "Session invalidated successfully.",
+  })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const sid = req.cookies?.[COOKIE_SID_KEY] || req.cookies?.["sid"];
     await this.sessionService.invalidate(sid);
@@ -65,6 +96,12 @@ export class AuthController {
   }
 
   @Get("session")
+  @ApiOperation({ summary: "Get the current authenticated session" })
+  @ApiCookieAuth("sid")
+  @ApiCookieAuth("__Secure-sid")
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: "Authenticated session details." })
+  @ApiResponse({ status: 401, description: "Authentication required." })
   getSession(@CurrentUser() session: SessionData) {
     return {
       title: "valida",
