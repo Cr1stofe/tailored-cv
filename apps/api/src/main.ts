@@ -2,6 +2,7 @@ import "./observability/instrument";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, Logger as NestLogger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { SwaggerModule } from "@nestjs/swagger";
 import { Logger as PinoNestLogger } from "nestjs-pino";
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -9,6 +10,8 @@ import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { InMemoryRateLimiter } from "./common/security/rate-limit";
+import { getActiveCookieName } from "./auth/services/session.service";
+import { createSwaggerConfig } from "./swagger.config";
 
 async function bootstrap(): Promise<void> {
   const logger = new NestLogger("Bootstrap");
@@ -30,9 +33,13 @@ async function bootstrap(): Promise<void> {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    const isSwaggerRoute =
+      req.path === "/docs" || req.path.startsWith("/docs/");
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+      isSwaggerRoute
+        ? "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://validator.swagger.io; script-src 'self' 'unsafe-inline' https:"
+        : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
     );
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
@@ -61,6 +68,7 @@ async function bootstrap(): Promise<void> {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>("API_PORT", 3001);
+  const swaggerEnabled = configService.get<boolean>("SWAGGER_ENABLED", false);
   const corsOrigin = configService.get<string>(
     "CORS_ORIGIN",
     "http://localhost:3000",
@@ -88,6 +96,24 @@ async function bootstrap(): Promise<void> {
   );
 
   app.useGlobalFilters(app.get(AllExceptionsFilter));
+
+  if (swaggerEnabled) {
+    const documentFactory = () =>
+      SwaggerModule.createDocument(
+        app,
+        createSwaggerConfig(getActiveCookieName()),
+      );
+
+    SwaggerModule.setup("docs", app, documentFactory, {
+      jsonDocumentUrl: "docs/openapi.json",
+      customSiteTitle: "Tailored CV API Documentation",
+      customCss: `
+        .swagger-ui .topbar { display: none; }
+        .swagger-ui .information-container { padding-top: 28px; }
+      `,
+    });
+    logger.log("Swagger documentation enabled at /docs");
+  }
 
   await app.listen(port, "0.0.0.0");
   logger.log(`Tailored CV API running on port ${port}`);

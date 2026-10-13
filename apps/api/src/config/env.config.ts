@@ -13,6 +13,7 @@ export interface EnvironmentVariables {
   LOG_LEVEL?: string;
   SENTRY_DSN?: string;
   SENTRY_TRACES_SAMPLE_RATE?: number;
+  SWAGGER_ENABLED: boolean;
 }
 
 export const envConfig = (): EnvironmentVariables => ({
@@ -34,4 +35,8 @@ export const envConfig = (): EnvironmentVariables => ({
   SENTRY_TRACES_SAMPLE_RATE: parseFloat(
     process.env["SENTRY_TRACES_SAMPLE_RATE"] || "0",
   ),
+  SWAGGER_ENABLED:
+    process.env["SWAGGER_ENABLED"] === "true" ||
+    (!process.env["SWAGGER_ENABLED"] &&
+      (process.env["NODE_ENV"] || "development") !== "production"),
 });

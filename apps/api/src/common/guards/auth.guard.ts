@@ -30,12 +30,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
 
-    const sid =
-      request.cookies?.[COOKIE_SID_KEY] ||
-      request.cookies?.["sid"] ||
-      (request.headers["authorization"]?.startsWith("Bearer ")
-        ? request.headers["authorization"].slice(7)
-        : undefined);
+    const sid = request.cookies?.[COOKIE_SID_KEY] || request.cookies?.["sid"];
 
     if (!sid) {
       if (isPublic) {

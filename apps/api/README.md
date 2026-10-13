@@ -51,6 +51,15 @@ The API follows NestJS standard modular design patterns with separation of conce
 - `GET /health/ready` — Readiness probe that verifies PostgreSQL connectivity
 - `GET /health?detailed=true` — Deep probe including database latency check
 
+### OpenAPI documentation
+
+Swagger UI is enabled by default by the development Docker Compose configuration
+at `http://localhost:3001/docs`. For direct local startup, set
+`SWAGGER_ENABLED=true`. The machine-readable document is available at
+`http://localhost:3001/docs/openapi.json`. Keep `SWAGGER_ENABLED=false` in
+production unless the documentation is exposed behind an authenticated internal
+route or network boundary.
+
 ---
 
 ## ⚙️ Environment Variables
@@ -76,6 +85,7 @@ API_PORT=3001
 CORS_ORIGIN=http://localhost:3000
 DB_POOL_MAX=10
 RUN_MIGRATIONS=true
+SWAGGER_ENABLED=false
 ```
 
 ---
