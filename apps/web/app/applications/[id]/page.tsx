@@ -236,6 +236,7 @@ export default function ApplicationDetailPage({
   };
 
   const handleAnalyze = async () => {
+    if (isTailoring) return;
     setIsAnalyzing(true);
     try {
       const generation = await api.analyzeJob(id);
@@ -253,6 +254,7 @@ export default function ApplicationDetailPage({
   };
 
   const handleTailor = async () => {
+    if (isAnalyzing) return;
     setIsTailoring(true);
     try {
       const generation = await api.tailorResume(id, tailorLanguage);
@@ -263,11 +265,10 @@ export default function ApplicationDetailPage({
         "A geração foi iniciada. Você pode continuar navegando; avisaremos quando o currículo estiver pronto.",
       );
     } catch (err) {
+      setIsTailoring(false);
       toast.error(
         err instanceof Error ? err.message : "Falha ao adaptar currículo",
       );
-    } finally {
-      setIsTailoring(false);
     }
   };
 
@@ -460,6 +461,7 @@ export default function ApplicationDetailPage({
           profile={profile}
           isEditingResume={isEditingResume}
           isSavingResume={isSavingResume}
+          isAnalyzing={isAnalyzing}
           isTailoring={isTailoring}
           onTailor={handleTailor}
           onSaveResume={handleSaveResume}

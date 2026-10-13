@@ -29,6 +29,7 @@ interface TailoredResumeTabProps {
   profile: MasterProfileDto | null;
   isEditingResume: boolean;
   isSavingResume: boolean;
+  isAnalyzing: boolean;
   isTailoring: boolean;
   onTailor: () => void;
   onSaveResume: (data: TailoredResumeFormInput) => Promise<void>;
@@ -40,6 +41,7 @@ export function TailoredResumeTab({
   profile,
   isEditingResume,
   isSavingResume,
+  isAnalyzing,
   isTailoring,
   onTailor,
   onSaveResume,
@@ -100,7 +102,7 @@ export function TailoredResumeTab({
           type="button"
           className={`${styles.actionButton} ${styles.primary}`}
           onClick={onTailor}
-          disabled={isTailoring}
+          disabled={isTailoring || isAnalyzing}
         >
           <FileCheck size={16} />
           <span>

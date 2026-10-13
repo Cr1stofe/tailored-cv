@@ -117,7 +117,7 @@ export function ApplicationTopBar({
               type="button"
               className={`${styles.actionButton} ${styles.secondary}`}
               onClick={onAnalyze}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || isTailoring}
             >
               <Sparkles size={16} />
               <span>{isAnalyzing ? "Analisando..." : "Reanalisar Vaga"}</span>
@@ -133,7 +133,7 @@ export function ApplicationTopBar({
                   type="button"
                   className={tailorLanguage === "PT" ? styles.active : ""}
                   onClick={() => onTailorLanguageChange("PT")}
-                  disabled={isTailoring}
+                  disabled={isTailoring || isAnalyzing}
                   title={
                     savedLanguages.includes("PT")
                       ? "Versão PT salva"
@@ -146,7 +146,7 @@ export function ApplicationTopBar({
                   type="button"
                   className={tailorLanguage === "EN" ? styles.active : ""}
                   onClick={() => onTailorLanguageChange("EN")}
-                  disabled={isTailoring}
+                  disabled={isTailoring || isAnalyzing}
                   title={
                     savedLanguages.includes("EN")
                       ? "Versão EN salva"
@@ -168,7 +168,7 @@ export function ApplicationTopBar({
               type="button"
               className={`${styles.actionButton} ${styles.secondary}`}
               onClick={onTailor}
-              disabled={isTailoring}
+              disabled={isTailoring || isAnalyzing}
             >
               <FileCheck size={16} />
               <span>
