@@ -38,7 +38,7 @@ export function JobAnalysisTab({
           type="button"
           className={`${styles.actionButton} ${styles.primary}`}
           onClick={onAnalyze}
-          disabled={isAnalyzing}
+          disabled={isAnalyzing || isTailoring}
         >
           <Sparkles size={16} />
           <span>
@@ -324,7 +324,7 @@ export function JobAnalysisTab({
               type="button"
               className={`${styles.actionButton} ${styles.ctaButton}`}
               onClick={onTailor}
-              disabled={isTailoring}
+              disabled={isTailoring || isAnalyzing}
             >
               <FileCheck size={16} />
               <span>

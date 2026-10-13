@@ -59,6 +59,39 @@ export interface CertificationDto {
 
 export type SupportedLanguage = "PT" | "EN";
 
+export type TailoringGenerationStatus =
+  "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface TailoringGenerationDto {
+  id: string;
+  applicationId: string;
+  targetLanguage: SupportedLanguage;
+  status: TailoringGenerationStatus;
+  attempts: number;
+  errorMessage?: string | null;
+  resumeId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
+export type AnalysisGenerationStatus =
+  "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface AnalysisGenerationDto {
+  id: string;
+  applicationId: string;
+  status: AnalysisGenerationStatus;
+  attempts: number;
+  errorMessage?: string | null;
+  analysisId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
 export interface MasterProfileDto {
   id?: string;
   fullName: string;

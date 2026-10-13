@@ -99,6 +99,17 @@ export const masterProfileSchema = z.object({
 
 export const supportedLanguageSchema = z.enum(["PT", "EN"]);
 
+export const tailoringGenerationStatusSchema = z.enum([
+  "QUEUED",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+]);
+
+export const tailoringStatusQuerySchema = z.object({
+  language: supportedLanguageSchema.optional(),
+});
+
 export const tailorResumeRequestSchema = z.object({
   targetLanguage: supportedLanguageSchema.optional(),
 });
