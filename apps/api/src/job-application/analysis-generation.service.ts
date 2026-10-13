@@ -1,10 +1,12 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   OnModuleDestroy,
   OnModuleInit,
   Optional,
 } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import type { AnalysisGenerationDto, JobAnalysisDto } from "@tailored-cv/types";
 import { AIService } from "../ai/ai.service";
@@ -50,7 +52,16 @@ export class AnalysisGenerationService
   ) {}
 
   onModuleInit(): void {
-    void this.recoverStaleGenerations();
+    void this.recoverStaleGenerations().catch((error) => {
+      this.logger?.error(
+        {
+          event: "analysis.queue.recovery_failed",
+          errorType:
+            error instanceof Error ? error.constructor.name : "Unknown",
+        },
+        "Failed to recover stale analysis generations",
+      );
+    });
     this.timer = setInterval(() => void this.processNext(), POLL_INTERVAL_MS);
     void this.processNext();
   }
@@ -68,6 +79,19 @@ export class AnalysisGenerationService
       throw new NotFoundException(`Job application ${applicationId} not found`);
     }
 
+    const activeTailoring = await this.prisma.tailoringGeneration.findFirst({
+      where: {
+        applicationId,
+        status: { in: ["QUEUED", "PROCESSING"] },
+      },
+    });
+
+    if (activeTailoring) {
+      throw new ConflictException(
+        "A resume tailoring job is already running for this application.",
+      );
+    }
+
     const active = await this.prisma.analysisGeneration.findFirst({
       where: {
         applicationId,
@@ -78,9 +102,31 @@ export class AnalysisGenerationService
 
     if (active) return this.mapGeneration(active);
 
-    const generation = await this.prisma.analysisGeneration.create({
-      data: { applicationId },
-    });
+    let generation;
+    try {
+      generation = await this.prisma.analysisGeneration.create({
+        data: { applicationId },
+      });
+    } catch (error) {
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
+      }
+
+      const concurrentGeneration =
+        await this.prisma.analysisGeneration.findFirst({
+          where: {
+            applicationId,
+            status: { in: ["QUEUED", "PROCESSING"] },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+      if (!concurrentGeneration) throw error;
+      return this.mapGeneration(concurrentGeneration);
+    }
 
     void this.processNext();
     return this.mapGeneration(generation);
@@ -191,8 +237,8 @@ export class AnalysisGenerationService
           },
         });
 
-        await transaction.jobApplication.update({
-          where: { id: generation.applicationId },
+        await transaction.jobApplication.updateMany({
+          where: { id: generation.applicationId, status: "DRAFT" },
           data: { status: "ANALYZED" },
         });
       });

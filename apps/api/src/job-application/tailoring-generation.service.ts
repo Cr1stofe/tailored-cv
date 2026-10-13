@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   OnModuleDestroy,
@@ -54,7 +55,16 @@ export class TailoringGenerationService
   ) {}
 
   onModuleInit(): void {
-    void this.recoverStaleGenerations();
+    void this.recoverStaleGenerations().catch((error) => {
+      this.logger?.error(
+        {
+          event: "tailoring.queue.recovery_failed",
+          errorType:
+            error instanceof Error ? error.constructor.name : "Unknown",
+        },
+        "Failed to recover stale tailoring generations",
+      );
+    });
     this.timer = setInterval(() => void this.processNext(), POLL_INTERVAL_MS);
     void this.processNext();
   }
@@ -75,6 +85,19 @@ export class TailoringGenerationService
       throw new NotFoundException(`Job application ${applicationId} not found`);
     }
 
+    const activeAnalysis = await this.prisma.analysisGeneration.findFirst({
+      where: {
+        applicationId,
+        status: { in: ["QUEUED", "PROCESSING"] },
+      },
+    });
+
+    if (activeAnalysis) {
+      throw new ConflictException(
+        "A job analysis is already running for this application.",
+      );
+    }
+
     const language =
       targetLanguage ||
       (application.targetLanguage as SupportedLanguage) ||
@@ -90,9 +113,32 @@ export class TailoringGenerationService
 
     if (active) return this.mapGeneration(active);
 
-    const generation = await this.prisma.tailoringGeneration.create({
-      data: { applicationId, targetLanguage: language },
-    });
+    let generation;
+    try {
+      generation = await this.prisma.tailoringGeneration.create({
+        data: { applicationId, targetLanguage: language },
+      });
+    } catch (error) {
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
+      }
+
+      const concurrentGeneration =
+        await this.prisma.tailoringGeneration.findFirst({
+          where: {
+            applicationId,
+            targetLanguage: language,
+            status: { in: ["QUEUED", "PROCESSING"] },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+      if (!concurrentGeneration) throw error;
+      return this.mapGeneration(concurrentGeneration);
+    }
 
     void this.processNext();
     return this.mapGeneration(generation);
@@ -231,9 +277,16 @@ export class TailoringGenerationService
             errorMessage: null,
           },
         });
-        await transaction.jobApplication.update({
+        await transaction.jobApplication.updateMany({
+          where: {
+            id: generation.applicationId,
+            status: { in: ["DRAFT", "ANALYZED", "TAILORED"] },
+          },
+          data: { status: "TAILORED" },
+        });
+        await transaction.jobApplication.updateMany({
           where: { id: generation.applicationId },
-          data: { status: "TAILORED", targetLanguage },
+          data: { targetLanguage },
         });
       });
     } catch (error) {
