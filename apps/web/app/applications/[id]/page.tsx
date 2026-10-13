@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, FileCheck, FileText } from "lucide-react";
@@ -58,6 +58,8 @@ export default function ApplicationDetailPage({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [tailorLanguage, setTailorLanguage] = useState<"PT" | "EN">("PT");
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -77,6 +79,26 @@ export default function ApplicationDetailPage({
   useEffect(() => {
     loadData();
   }, [id]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const tabs = tabsRef.current;
+      const activeButton = tabRefs.current[activeTab];
+
+      if (!tabs || !activeButton) return;
+
+      const targetScrollLeft =
+        activeButton.offsetLeft -
+        (tabs.clientWidth - activeButton.offsetWidth) / 2;
+
+      tabs.scrollTo({
+        left: Math.max(0, targetScrollLeft),
+        behavior: "smooth",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab]);
 
   useEffect(() => {
     if (
@@ -408,9 +430,12 @@ export default function ApplicationDetailPage({
           </div>
         )}
 
-      <div className={`${styles.tabs} no-print`}>
+      <div ref={tabsRef} className={`${styles.tabs} no-print`}>
         <button
           type="button"
+          ref={(element) => {
+            tabRefs.current.job = element;
+          }}
           className={`${styles.tabButton} ${activeTab === "job" ? styles.active : ""}`}
           onClick={() => setActiveTab("job")}
         >
@@ -420,6 +445,9 @@ export default function ApplicationDetailPage({
 
         <button
           type="button"
+          ref={(element) => {
+            tabRefs.current.analysis = element;
+          }}
           className={`${styles.tabButton} ${activeTab === "analysis" ? styles.active : ""}`}
           onClick={() => setActiveTab("analysis")}
         >
@@ -432,6 +460,9 @@ export default function ApplicationDetailPage({
 
         <button
           type="button"
+          ref={(element) => {
+            tabRefs.current.resume = element;
+          }}
           className={`${styles.tabButton} ${activeTab === "resume" ? styles.active : ""}`}
           onClick={() => setActiveTab("resume")}
         >
