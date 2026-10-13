@@ -68,6 +68,7 @@ tailored-cv/
 ├── .gitignore
 ├── compose.yaml                 # Production stack (Caddy web_gateway + isolated default network)
 ├── compose.dev.yaml             # Development stack (binds 127.0.0.1:5432 to host)
+├── compose.observability.yaml   # Optional Loki, Prometheus, Grafana and Alloy stack
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── turbo.json
@@ -167,6 +168,13 @@ Check container status and logs:
 docker compose ps
 docker compose logs -f
 ```
+
+### Observabilidade opcional
+
+A API emite logs JSON, métricas Prometheus e pode enviar exceções ao Sentry.
+Para iniciar Loki, Prometheus, Grafana e Alloy junto com a aplicação, consulte
+[`docs/observability.md`](docs/observability.md). A stack é opcional e não é
+iniciada pelo compose padrão.
 
 ### Backup do PostgreSQL
 

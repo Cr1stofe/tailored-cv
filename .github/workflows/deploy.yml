@@ -42,7 +42,15 @@ jobs:
               exit 1
             fi
 
-            docker compose up --build -d
-            docker compose exec -T api pnpm --filter @tailored-cv/api prisma:migrate:deploy
+            docker compose \
+              -f compose.yaml \
+              -f compose.observability.yaml \
+              --profile observability \
+              up --build -d
+            docker compose \
+              -f compose.yaml \
+              -f compose.observability.yaml \
+              --profile observability \
+              exec -T api pnpm --filter @tailored-cv/api prisma:migrate:deploy
             docker image prune -f
           "

@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: Tailored CV
+    type: file
+    disableDeletion: true
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

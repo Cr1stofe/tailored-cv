@@ -34,6 +34,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tailored_cv}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-tailored_cv}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
       PEPPER: ${PEPPER:?Defina PEPPER no .env}
       INITIAL_USER_EMAIL: ${INITIAL_USER_EMAIL:-}
       INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
