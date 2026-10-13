@@ -31,7 +31,6 @@ import {
 } from "@tailored-cv/validation";
 import { ZodValidationPipe } from "../common/pipes";
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiCookieAuth,
   ApiOperation,
@@ -42,9 +41,7 @@ import {
 
 @Controller("job-applications")
 @ApiTags("Job applications")
-@ApiCookieAuth("sid")
-@ApiCookieAuth("__Secure-sid")
-@ApiBearerAuth("sessionToken")
+@ApiCookieAuth("sessionCookie")
 export class JobApplicationController {
   constructor(private readonly jobApplicationService: JobApplicationService) {}
 

@@ -10,6 +10,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { InMemoryRateLimiter } from "./common/security/rate-limit";
+import { getActiveCookieName } from "./auth/services/session.service";
 import { createSwaggerConfig } from "./swagger.config";
 
 async function bootstrap(): Promise<void> {
@@ -98,7 +99,10 @@ async function bootstrap(): Promise<void> {
 
   if (swaggerEnabled) {
     const documentFactory = () =>
-      SwaggerModule.createDocument(app, createSwaggerConfig());
+      SwaggerModule.createDocument(
+        app,
+        createSwaggerConfig(getActiveCookieName()),
+      );
 
     SwaggerModule.setup("docs", app, documentFactory, {
       jsonDocumentUrl: "docs/openapi.json",

@@ -24,19 +24,20 @@ describe("Swagger document", () => {
     const app = moduleRef.createNestApplication();
     await app.init();
 
-    const document = SwaggerModule.createDocument(app, createSwaggerConfig());
+    const document = SwaggerModule.createDocument(
+      app,
+      createSwaggerConfig("sid"),
+    );
     const securitySchemes = document.components?.securitySchemes;
     const healthParameters = document.paths["/health"]?.get?.parameters || [];
     const applicationParameters =
       document.paths["/job-applications"]?.get?.parameters || [];
 
-    expect(Object.keys(securitySchemes || {})).toEqual(
-      expect.arrayContaining(["sid", "__Secure-sid", "sessionToken"]),
-    );
-    expect(securitySchemes?.sessionToken).toMatchObject({
-      type: "http",
-      scheme: "bearer",
-      bearerFormat: "opaque",
+    expect(Object.keys(securitySchemes || {})).toEqual(["sessionCookie"]);
+    expect(securitySchemes?.sessionCookie).toMatchObject({
+      type: "apiKey",
+      in: "cookie",
+      name: "sid",
     });
     const tailoringRequestBody =
       document.paths["/job-applications/{id}/tailor"]?.post?.requestBody;

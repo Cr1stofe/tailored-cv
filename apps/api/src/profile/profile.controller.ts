@@ -4,7 +4,6 @@ import type { MasterProfileDto } from "@tailored-cv/types";
 import { masterProfileSchema } from "@tailored-cv/validation";
 import { ZodValidationPipe } from "../common/pipes";
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiCookieAuth,
   ApiOperation,
@@ -14,9 +13,7 @@ import {
 
 @Controller("profile")
 @ApiTags("Profile")
-@ApiCookieAuth("sid")
-@ApiCookieAuth("__Secure-sid")
-@ApiBearerAuth("sessionToken")
+@ApiCookieAuth("sessionCookie")
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 

@@ -26,10 +26,6 @@ async function forwardRequest(
     headers.set("cookie", cookie);
   }
 
-  const authorization = req.headers.get("authorization");
-  if (authorization) {
-    headers.set("authorization", authorization);
-  }
   const accept = req.headers.get("accept");
   if (accept) headers.set("accept", accept);
   const clientIp =

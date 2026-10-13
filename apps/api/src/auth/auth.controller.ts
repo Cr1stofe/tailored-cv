@@ -24,7 +24,6 @@ import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { AuthGuard } from "../common/guards/auth.guard";
 import {
-  ApiBearerAuth,
   ApiCookieAuth,
   ApiBody,
   ApiOperation,
@@ -97,9 +96,7 @@ export class AuthController {
 
   @Get("session")
   @ApiOperation({ summary: "Get the current authenticated session" })
-  @ApiCookieAuth("sid")
-  @ApiCookieAuth("__Secure-sid")
-  @ApiBearerAuth("sessionToken")
+  @ApiCookieAuth("sessionCookie")
   @ApiResponse({ status: 200, description: "Authenticated session details." })
   @ApiResponse({ status: 401, description: "Authentication required." })
   getSession(@CurrentUser() session: SessionData) {
