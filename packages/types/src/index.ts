@@ -76,6 +76,22 @@ export interface TailoringGenerationDto {
   completedAt?: string | null;
 }
 
+export type AnalysisGenerationStatus =
+  "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface AnalysisGenerationDto {
+  id: string;
+  applicationId: string;
+  status: AnalysisGenerationStatus;
+  attempts: number;
+  errorMessage?: string | null;
+  analysisId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
 export interface MasterProfileDto {
   id?: string;
   fullName: string;

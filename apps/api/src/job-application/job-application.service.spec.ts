@@ -2,15 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { JobApplicationService } from "./job-application.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfileService } from "../profile/profile.service";
-import { AIService } from "../ai/ai.service";
-import { ConfigService } from "@nestjs/config";
 import { MasterProfileDto } from "@tailored-cv/types";
 
 describe("JobApplicationService", () => {
   let service: JobApplicationService;
   let mockPrisma: Partial<PrismaService>;
   let mockProfileService: Partial<ProfileService>;
-  let aiService: AIService;
 
   const mockProfile: MasterProfileDto = {
     id: "mock-profile-id",
@@ -61,11 +58,9 @@ describe("JobApplicationService", () => {
       getProfile: async () => mockProfile,
     };
 
-    aiService = new AIService(new ConfigService());
     service = new JobApplicationService(
       mockPrisma as PrismaService,
       mockProfileService as ProfileService,
-      aiService,
     );
   });
 

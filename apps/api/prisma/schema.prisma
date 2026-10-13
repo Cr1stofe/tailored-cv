@@ -39,6 +39,13 @@ enum TailoringGenerationStatus {
   FAILED
 }
 
+enum AnalysisGenerationStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model Profile {
   id           String   @id @default(uuid())
   fullName     String   @map("full_name")
@@ -164,6 +171,7 @@ model JobApplication {
   jobAnalysis     JobAnalysis?
   tailoredResumes TailoredResume[]
   tailoringGenerations TailoringGeneration[]
+  analysisGenerations  AnalysisGeneration[]
 
   @@index([profileId])
   @@map("job_applications")
@@ -190,6 +198,27 @@ model TailoringGeneration {
   @@map("tailoring_generations")
 }
 
+model AnalysisGeneration {
+  id            String                   @id @default(uuid())
+  applicationId String                   @map("application_id")
+  status        AnalysisGenerationStatus @default(QUEUED)
+  attempts      Int                      @default(0)
+  errorMessage  String?                  @map("error_message") @db.Text
+  analysisId    String?                  @map("analysis_id")
+  availableAt   DateTime                 @default(now()) @map("available_at")
+  startedAt     DateTime?                @map("started_at")
+  completedAt   DateTime?                @map("completed_at")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  analysis    JobAnalysis?   @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt])
+  @@index([status, availableAt, createdAt])
+  @@map("analysis_generations")
+}
+
 model JobAnalysis {
   id                       String   @id @default(uuid())
   applicationId            String   @unique @map("application_id")
@@ -207,6 +236,7 @@ model JobAnalysis {
   updatedAt                DateTime @updatedAt @map("updated_at")
 
   application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  generations AnalysisGeneration[]
 
   @@map("job_analyses")
 }

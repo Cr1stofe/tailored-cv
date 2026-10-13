@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfileService } from "../profile/profile.service";
-import { AIService } from "../ai/ai.service";
 import {
   ApplicationStatus,
   JobApplicationDto,
@@ -13,6 +12,7 @@ import {
   PaginatedResult,
   JobApplicationFiltersDto,
   TailoringGenerationDto,
+  AnalysisGenerationDto,
 } from "@tailored-cv/types";
 import {
   CreateJobApplicationInput,
@@ -20,14 +20,15 @@ import {
 } from "@tailored-cv/validation";
 import { Prisma } from "@prisma/client";
 import { TailoringGenerationService } from "./tailoring-generation.service";
+import { AnalysisGenerationService } from "./analysis-generation.service";
 
 @Injectable()
 export class JobApplicationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profileService: ProfileService,
-    private readonly aiService: AIService,
     private readonly tailoringGenerationService?: TailoringGenerationService,
+    private readonly analysisGenerationService?: AnalysisGenerationService,
   ) {}
 
   async findAll(
@@ -205,52 +206,20 @@ export class JobApplicationService {
     return this.mapApplication(updated);
   }
 
-  async analyze(id: string) {
-    const application = await this.findById(id);
-    const masterProfile = await this.profileService.getProfile();
+  async analyze(id: string): Promise<AnalysisGenerationDto> {
+    if (!this.analysisGenerationService) {
+      throw new Error("Analysis generation service is not configured");
+    }
 
-    const analysisOutput = await this.aiService.analyzeJob({
-      company: application.company,
-      position: application.position,
-      jobDescription: application.jobDescription,
-      masterProfile,
-    });
+    return this.analysisGenerationService.enqueue(id);
+  }
 
-    const savedAnalysis = await this.prisma.jobAnalysis.upsert({
-      where: { applicationId: id },
-      create: {
-        applicationId: id,
-        summary: analysisOutput.summary,
-        seniorityLevel: analysisOutput.seniorityLevel,
-        requiredSkills: analysisOutput.requiredSkills,
-        desiredSkills: analysisOutput.desiredSkills,
-        keyResponsibilities: analysisOutput.keyResponsibilities,
-        keywords: analysisOutput.keywords,
-        matchScore: analysisOutput.matchScore,
-        matchingSkills: analysisOutput.matchingSkills,
-        missingSkills: analysisOutput.missingSkills,
-        strategicRecommendations: analysisOutput.strategicRecommendations,
-      },
-      update: {
-        summary: analysisOutput.summary,
-        seniorityLevel: analysisOutput.seniorityLevel,
-        requiredSkills: analysisOutput.requiredSkills,
-        desiredSkills: analysisOutput.desiredSkills,
-        keyResponsibilities: analysisOutput.keyResponsibilities,
-        keywords: analysisOutput.keywords,
-        matchScore: analysisOutput.matchScore,
-        matchingSkills: analysisOutput.matchingSkills,
-        missingSkills: analysisOutput.missingSkills,
-        strategicRecommendations: analysisOutput.strategicRecommendations,
-      },
-    });
+  async getAnalysisStatus(id: string): Promise<AnalysisGenerationDto> {
+    if (!this.analysisGenerationService) {
+      throw new Error("Analysis generation service is not configured");
+    }
 
-    await this.prisma.jobApplication.update({
-      where: { id },
-      data: { status: "ANALYZED" },
-    });
-
-    return savedAnalysis;
+    return this.analysisGenerationService.getStatus(id);
   }
 
   async tailor(

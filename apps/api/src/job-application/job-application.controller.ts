@@ -20,6 +20,7 @@ import type {
   SupportedLanguage,
   JobApplicationFiltersDto,
   TailoringGenerationDto,
+  AnalysisGenerationDto,
 } from "@tailored-cv/types";
 import {
   createJobApplicationSchema,
@@ -67,8 +68,18 @@ export class JobApplicationController {
   }
 
   @Post(":id/analyze")
-  async analyze(@Param("id", new ParseUUIDPipe()) id: string) {
+  @HttpCode(HttpStatus.ACCEPTED)
+  async analyze(
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<AnalysisGenerationDto> {
     return this.jobApplicationService.analyze(id);
+  }
+
+  @Get(":id/analyze/status")
+  async getAnalysisStatus(
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<AnalysisGenerationDto> {
+    return this.jobApplicationService.getAnalysisStatus(id);
   }
 
   @Post(":id/tailor")
