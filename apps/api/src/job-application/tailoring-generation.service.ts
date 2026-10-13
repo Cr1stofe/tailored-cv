@@ -161,7 +161,8 @@ export class TailoringGenerationService
       this.logger?.error(
         {
           event: "tailoring.queue.failed",
-          errorType: error instanceof Error ? error.constructor.name : "Unknown",
+          errorType:
+            error instanceof Error ? error.constructor.name : "Unknown",
         },
         "Tailoring queue cycle failed",
       );
@@ -244,7 +245,9 @@ export class TailoringGenerationService
         data: {
           status: shouldRetry ? "QUEUED" : "FAILED",
           errorMessage: message.slice(0, 1_000),
-          availableAt: new Date(Date.now() + (shouldRetry ? RETRY_DELAY_MS : 0)),
+          availableAt: new Date(
+            Date.now() + (shouldRetry ? RETRY_DELAY_MS : 0),
+          ),
           completedAt: shouldRetry ? null : new Date(),
         },
       });
@@ -256,7 +259,8 @@ export class TailoringGenerationService
           applicationId: generation.applicationId,
           attempt: generation.attempts,
           willRetry: shouldRetry,
-          errorType: error instanceof Error ? error.constructor.name : "Unknown",
+          errorType:
+            error instanceof Error ? error.constructor.name : "Unknown",
         },
         "Tailoring generation failed",
       );

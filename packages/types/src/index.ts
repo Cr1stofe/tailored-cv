@@ -60,10 +60,7 @@ export interface CertificationDto {
 export type SupportedLanguage = "PT" | "EN";
 
 export type TailoringGenerationStatus =
-  | "QUEUED"
-  | "PROCESSING"
-  | "COMPLETED"
-  | "FAILED";
+  "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export interface TailoringGenerationDto {
   id: string;

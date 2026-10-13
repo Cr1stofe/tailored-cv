@@ -261,10 +261,7 @@ export class JobApplicationService {
       throw new Error("Tailoring generation service is not configured");
     }
 
-    return this.tailoringGenerationService.enqueue(
-      id,
-      options?.targetLanguage,
-    );
+    return this.tailoringGenerationService.enqueue(id, options?.targetLanguage);
   }
 
   async getTailoringStatus(

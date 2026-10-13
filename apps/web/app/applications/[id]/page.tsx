@@ -154,7 +154,8 @@ export default function ApplicationDetailPage({
           (resume) => resume.language === appData.targetLanguage,
         ) || savedResumes[0];
 
-      const initialLanguage = preferredResume?.language || appData.targetLanguage || "PT";
+      const initialLanguage =
+        preferredResume?.language || appData.targetLanguage || "PT";
 
       if (preferredResume) {
         setTailoredResume(preferredResume);
