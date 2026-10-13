@@ -61,6 +61,9 @@ describe("Validation Schemas", () => {
     expect(sanitizeHeadline("Dev Front-end Rockstar 💻 [Remoto]")).toBe(
       "Desenvolvedor Front-end",
     );
+    expect(sanitizeHeadline("Desenvolvedor(a) Front- end Pleno")).toBe(
+      "Desenvolvedor Front-end",
+    );
 
     expect(sanitizeHeadline("")).toBe("");
     expect(sanitizeHeadline(null)).toBe("");

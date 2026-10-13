@@ -229,6 +229,8 @@ export function sanitizeHeadline(headline?: string | null): string {
     )
     .replace(/\bdev\b\.?/gi, "Desenvolvedor")
     .replace(/\beng\b\.?/gi, "Engenheiro")
+    .replace(/\bfront\s*-\s*end\b/gi, "Front-end")
+    .replace(/\bback\s*-\s*end\b/gi, "Back-end")
     .replace(/\s{2,}/g, " ")
     .replace(/^[-–—|/]\s*/, "")
     .replace(/\s*[-–—|/]$/, "")

@@ -209,6 +209,12 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
+
+  @media screen and (max-width: 540px) {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 
 .sectionTitle {
@@ -288,6 +294,7 @@
   font-weight: 600;
   padding: 0.3rem 0.65rem;
   border-radius: $radius-full;
+  white-space: nowrap;
   background: rgba(16, 185, 129, 0.12);
   color: $accent-success;
   border: 1px solid rgba(16, 185, 129, 0.25);
