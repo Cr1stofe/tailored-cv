@@ -214,7 +214,7 @@ Em produção, replique os arquivos para armazenamento externo. O backup só é 
 | `pnpm docker:dev`      | Starts full containerized development stack                                     |
 | `pnpm docker:prod`     | Starts full containerized production stack with private API/database networking |
 | `pnpm docker:seed`     | Triggers database seeding inside the running API container                      |
-| `pnpm docker:down`     | Shuts down and cleans up project containers                                     |
+| `pnpm docker:down`     | Shuts down application and observability containers                             |
 | `pnpm prisma:generate` | Generates typed Prisma Client 7                                                 |
 | `pnpm prisma:migrate`  | Applies Prisma migrations                                                       |
 | `pnpm prisma:seed`     | Runs TypeScript seed script (`prisma/seed.ts`)                                  |

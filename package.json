@@ -24,7 +24,7 @@
     "docker:dev:build": "docker compose -f compose.dev.yaml up -d --build",
     "docker:prod": "docker compose -f compose.yaml up -d",
     "docker:seed": "docker exec tailored-cv-api pnpm --filter @tailored-cv/api prisma db seed",
-    "docker:down": "docker compose -f compose.yaml -f compose.dev.yaml down"
+    "docker:down": "docker compose -f compose.yaml -f compose.dev.yaml -f compose.observability.yaml --profile observability down"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
