@@ -6,7 +6,6 @@ import {
   OnModuleInit,
   Optional,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import type { AnalysisGenerationDto, JobAnalysisDto } from "@tailored-cv/types";
 import { AIService } from "../ai/ai.service";
@@ -16,7 +15,6 @@ import { PrismaService } from "../prisma/prisma.service";
 const POLL_INTERVAL_MS = 2_000;
 const RETRY_DELAY_MS = 10_000;
 const MAX_ATTEMPTS = 2;
-const STALE_AFTER_MS = 15 * 60 * 1_000;
 
 type AnalysisGenerationStatus =
   "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
@@ -79,54 +77,41 @@ export class AnalysisGenerationService
       throw new NotFoundException(`Job application ${applicationId} not found`);
     }
 
-    const activeTailoring = await this.prisma.tailoringGeneration.findFirst({
-      where: {
-        applicationId,
-        status: { in: ["QUEUED", "PROCESSING"] },
-      },
-    });
+    const generation = await this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id"
+        FROM "job_applications"
+        WHERE "id" = ${applicationId}
+        FOR UPDATE
+      `;
 
-    if (activeTailoring) {
-      throw new ConflictException(
-        "A resume tailoring job is already running for this application.",
-      );
-    }
-
-    const active = await this.prisma.analysisGeneration.findFirst({
-      where: {
-        applicationId,
-        status: { in: ["QUEUED", "PROCESSING"] },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (active) return this.mapGeneration(active);
-
-    let generation;
-    try {
-      generation = await this.prisma.analysisGeneration.create({
-        data: { applicationId },
+      const activeTailoring = await transaction.tailoringGeneration.findFirst({
+        where: {
+          applicationId,
+          status: { in: ["QUEUED", "PROCESSING"] },
+        },
       });
-    } catch (error) {
-      if (
-        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
-        error.code !== "P2002"
-      ) {
-        throw error;
+
+      if (activeTailoring) {
+        throw new ConflictException(
+          "A resume tailoring job is already running for this application.",
+        );
       }
 
-      const concurrentGeneration =
-        await this.prisma.analysisGeneration.findFirst({
-          where: {
-            applicationId,
-            status: { in: ["QUEUED", "PROCESSING"] },
-          },
-          orderBy: { createdAt: "desc" },
-        });
+      const active = await transaction.analysisGeneration.findFirst({
+        where: {
+          applicationId,
+          status: { in: ["QUEUED", "PROCESSING"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
-      if (!concurrentGeneration) throw error;
-      return this.mapGeneration(concurrentGeneration);
-    }
+      if (active) return active;
+
+      return transaction.analysisGeneration.create({
+        data: { applicationId },
+      });
+    });
 
     void this.processNext();
     return this.mapGeneration(generation);
@@ -297,10 +282,7 @@ export class AnalysisGenerationService
 
   private async recoverStaleGenerations(): Promise<void> {
     await this.prisma.analysisGeneration.updateMany({
-      where: {
-        status: "PROCESSING",
-        startedAt: { lt: new Date(Date.now() - STALE_AFTER_MS) },
-      },
+      where: { status: "PROCESSING" },
       data: {
         status: "QUEUED",
         availableAt: new Date(),

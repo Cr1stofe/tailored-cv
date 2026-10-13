@@ -21,7 +21,6 @@ import { PrismaService } from "../prisma/prisma.service";
 const POLL_INTERVAL_MS = 2_000;
 const RETRY_DELAY_MS = 10_000;
 const MAX_ATTEMPTS = 2;
-const STALE_AFTER_MS = 15 * 60 * 1_000;
 
 export interface TailoringGenerationRecord {
   id: string;
@@ -85,60 +84,46 @@ export class TailoringGenerationService
       throw new NotFoundException(`Job application ${applicationId} not found`);
     }
 
-    const activeAnalysis = await this.prisma.analysisGeneration.findFirst({
-      where: {
-        applicationId,
-        status: { in: ["QUEUED", "PROCESSING"] },
-      },
-    });
-
-    if (activeAnalysis) {
-      throw new ConflictException(
-        "A job analysis is already running for this application.",
-      );
-    }
-
     const language =
       targetLanguage ||
       (application.targetLanguage as SupportedLanguage) ||
       "PT";
-    const active = await this.prisma.tailoringGeneration.findFirst({
-      where: {
-        applicationId,
-        targetLanguage: language,
-        status: { in: ["QUEUED", "PROCESSING"] },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const generation = await this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id"
+        FROM "job_applications"
+        WHERE "id" = ${applicationId}
+        FOR UPDATE
+      `;
 
-    if (active) return this.mapGeneration(active);
-
-    let generation;
-    try {
-      generation = await this.prisma.tailoringGeneration.create({
-        data: { applicationId, targetLanguage: language },
+      const activeAnalysis = await transaction.analysisGeneration.findFirst({
+        where: {
+          applicationId,
+          status: { in: ["QUEUED", "PROCESSING"] },
+        },
       });
-    } catch (error) {
-      if (
-        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
-        error.code !== "P2002"
-      ) {
-        throw error;
+
+      if (activeAnalysis) {
+        throw new ConflictException(
+          "A job analysis is already running for this application.",
+        );
       }
 
-      const concurrentGeneration =
-        await this.prisma.tailoringGeneration.findFirst({
-          where: {
-            applicationId,
-            targetLanguage: language,
-            status: { in: ["QUEUED", "PROCESSING"] },
-          },
-          orderBy: { createdAt: "desc" },
-        });
+      const active = await transaction.tailoringGeneration.findFirst({
+        where: {
+          applicationId,
+          targetLanguage: language,
+          status: { in: ["QUEUED", "PROCESSING"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
-      if (!concurrentGeneration) throw error;
-      return this.mapGeneration(concurrentGeneration);
-    }
+      if (active) return active;
+
+      return transaction.tailoringGeneration.create({
+        data: { applicationId, targetLanguage: language },
+      });
+    });
 
     void this.processNext();
     return this.mapGeneration(generation);
@@ -322,10 +307,7 @@ export class TailoringGenerationService
 
   private async recoverStaleGenerations(): Promise<void> {
     await this.prisma.tailoringGeneration.updateMany({
-      where: {
-        status: "PROCESSING",
-        startedAt: { lt: new Date(Date.now() - STALE_AFTER_MS) },
-      },
+      where: { status: "PROCESSING" },
       data: {
         status: "QUEUED",
         availableAt: new Date(),
