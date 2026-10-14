@@ -9,66 +9,20 @@ import type {
   TailoredResumeDto,
 } from "@tailored-cv/types";
 import styles from "../application-detail.module.scss";
-
-type EmailFocus = "frontend" | "fullstack";
+import {
+  buildMailtoUrl,
+  copyEmailContent,
+  createEmailBody,
+  getEmailSubject,
+  isValidRecipient,
+  resolveEmailLanguage,
+  type EmailFocus,
+} from "./email-draft";
 
 interface ApplicationEmailTabProps {
   application: JobApplicationDto;
   profile: MasterProfileDto | null;
   tailoredResume: TailoredResumeDto | null;
-}
-
-function createEmailBody(
-  application: JobApplicationDto,
-  profile: MasterProfileDto | null,
-  tailoredResume: TailoredResumeDto | null,
-  focus: EmailFocus,
-): string {
-  const isEnglish = tailoredResume?.language === "EN";
-  const focusContent =
-    focus === "frontend"
-      ? isEnglish
-        ? "My background includes experience with React, TypeScript, JavaScript, Next.js, responsive interfaces, componentization, and web performance."
-        : "Meu perfil reúne experiência com React, TypeScript, JavaScript, Next.js, interfaces responsivas, componentização e performance web."
-      : isEnglish
-        ? "My background includes experience with React, TypeScript, JavaScript, Next.js, Node.js, NestJS, REST APIs, relational databases, and authentication."
-        : "Meu perfil reúne experiência com React, TypeScript, JavaScript, Next.js, Node.js, NestJS, APIs RESTful, bancos de dados relacionais e autenticação.";
-
-  if (isEnglish) {
-    return [
-      "Hello,",
-      "",
-      `I would like to apply for the ${application.position || "opportunity"}${application.company ? ` position at ${application.company}` : " position"}.`,
-      "",
-      focusContent,
-      "",
-      "Please find my resume attached for your consideration.",
-      "",
-      "Thank you for your time. I remain available for any further information.",
-      "",
-      "Best regards,",
-      profile?.fullName || "",
-    ]
-      .filter((line, index, lines) => line || (index > 0 && lines[index - 1]))
-      .join("\n");
-  }
-
-  return [
-    "Olá,",
-    "",
-    `Gostaria de me candidatar à vaga de ${application.position || "oportunidade"}${application.company ? ` na ${application.company}` : ""}.`,
-    "",
-    focusContent,
-    "",
-    "Segue meu currículo em anexo para avaliação.",
-    "",
-    "Obrigado pela atenção e fico à disposição para qualquer informação adicional.",
-    "",
-    "Atenciosamente,",
-    profile?.fullName || "",
-  ]
-    .filter((line, index, lines) => line || (index > 0 && lines[index - 1]))
-    .join("\n");
 }
 
 export function ApplicationEmailTab({
@@ -80,24 +34,23 @@ export function ApplicationEmailTab({
   const [recipient, setRecipient] = useState("");
   const [recipientError, setRecipientError] = useState("");
   const recipientInputRef = useRef<HTMLInputElement | null>(null);
+  const language = resolveEmailLanguage(application, tailoredResume);
   const [body, setBody] = useState(() =>
-    createEmailBody(application, profile, tailoredResume, "frontend"),
+    createEmailBody(application, profile, language, "frontend"),
   );
 
   useEffect(() => {
-    setBody(createEmailBody(application, profile, tailoredResume, focus));
+    setBody(
+      createEmailBody(
+        application,
+        profile,
+        resolveEmailLanguage(application, tailoredResume),
+        focus,
+      ),
+    );
   }, [application, profile, tailoredResume, focus]);
 
-  const isEnglish = tailoredResume?.language === "EN";
-  const focusLabel =
-    focus === "frontend"
-      ? isEnglish
-        ? "Frontend"
-        : "Front-end"
-      : "Full Stack";
-  const subject = isEnglish
-    ? `Application — ${focusLabel} Developer`
-    : `Candidatura — Desenvolvedor ${focusLabel}`;
+  const subject = getEmailSubject(language, focus);
   const openEmailClient = () => {
     const recipientInput = recipientInputRef.current;
 
@@ -107,19 +60,27 @@ export function ApplicationEmailTab({
       return;
     }
 
-    if (!recipientInput || !recipientInput.checkValidity()) {
+    if (
+      !recipientInput ||
+      !recipientInput.checkValidity() ||
+      !isValidRecipient(recipient)
+    ) {
       setRecipientError("Informe um endereço de e-mail válido.");
       recipientInput?.focus();
       return;
     }
 
     setRecipientError("");
-    window.location.href = `mailto:${encodeURIComponent(recipient.trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = buildMailtoUrl(recipient, subject, body);
   };
 
   const copyEmail = async () => {
-    await navigator.clipboard.writeText(`Assunto: ${subject}\n\n${body}`);
-    toast.success("Assunto e corpo do e-mail copiados.");
+    const copied = await copyEmailContent(navigator.clipboard, subject, body);
+    if (copied) {
+      toast.success("Assunto e corpo do e-mail copiados.");
+    } else {
+      toast.error("Não foi possível copiar o conteúdo do e-mail.");
+    }
   };
 
   return (
