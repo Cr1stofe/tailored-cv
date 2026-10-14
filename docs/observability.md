@@ -11,6 +11,12 @@ Start the application normally for development. To start the optional
 observability stack as well:
 
 ```bash
+pnpm run docker:dev:observability:d
+```
+
+The equivalent Docker Compose command is:
+
+```bash
 docker compose -f compose.dev.yaml -f compose.observability.yaml \
   --profile observability up -d
 ```

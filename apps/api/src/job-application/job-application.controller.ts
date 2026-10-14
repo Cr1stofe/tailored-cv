@@ -167,6 +167,7 @@ export class JobApplicationController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: "Queue tailored resume generation" })
   @ApiBody({
+    required: true,
     schema: {
       type: "object",
       properties: {
