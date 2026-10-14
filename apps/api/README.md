@@ -147,7 +147,7 @@ and login-form validation. Start the development stack first, install the
 browser once, and run:
 
 ```bash
-pnpm exec playwright install chromium
+pnpm --filter @tailored-cv/web exec playwright install chromium
 pnpm test:e2e
 ```
 

@@ -41,8 +41,11 @@ Content-Type: application/json
 ```
 
 The `202 Accepted` response contains the persisted generation identifier and
-its initial `QUEUED` status. The client should use that status resource rather
-than keeping the original request open.
+its current status. A new request normally returns `QUEUED`; when an active
+generation already exists for the same application and language, the API
+reuses it and may return its current `QUEUED` or `PROCESSING` status. The
+client should use that status resource rather than keeping the original
+request open.
 
 O worker interno do NestJS processa uma tarefa de cada fila por vez, tenta
 novamente uma falha uma vez após um intervalo curto e recupera tarefas que
