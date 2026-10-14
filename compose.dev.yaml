@@ -30,7 +30,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: tailored-cv-api
     restart: unless-stopped
-    command: sh -c "pnpm --filter=@tailored-cv/api prisma:generate && pnpm --filter=@tailored-cv/api dev"
+    command: sh -c "pnpm --filter=@tailored-cv/api prisma:generate && pnpm --filter=@tailored-cv/api prisma:migrate:deploy && pnpm --filter=@tailored-cv/api dev"
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/prisma:/app/apps/api/prisma
@@ -51,7 +51,6 @@ services:
       INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
       INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
       INITIAL_USER_USERNAME: ${INITIAL_USER_USERNAME:-}
-      RUN_MIGRATIONS: "false"
     ports:
       - "3001:3001"
     depends_on:
