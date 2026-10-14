@@ -131,11 +131,7 @@ export class AnalysisGenerationService
       orderBy: { createdAt: "desc" },
     });
 
-    if (!generation) {
-      throw new NotFoundException(
-        `No analysis generation found for application ${applicationId}`,
-      );
-    }
+    if (!generation) return this.idleStatus(applicationId);
 
     return this.mapGeneration(generation);
   }
@@ -305,6 +301,21 @@ export class AnalysisGenerationService
       updatedAt: generation.updatedAt.toISOString(),
       startedAt: generation.startedAt?.toISOString() || null,
       completedAt: generation.completedAt?.toISOString() || null,
+    };
+  }
+
+  private idleStatus(applicationId: string): AnalysisGenerationDto {
+    return {
+      id: null,
+      applicationId,
+      status: "IDLE",
+      attempts: 0,
+      errorMessage: null,
+      analysisId: null,
+      createdAt: null,
+      updatedAt: null,
+      startedAt: null,
+      completedAt: null,
     };
   }
 }

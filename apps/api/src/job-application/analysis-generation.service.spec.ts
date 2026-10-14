@@ -143,6 +143,30 @@ describe("AnalysisGenerationService", () => {
     });
   });
 
+  it("returns IDLE when no analysis generation exists", async () => {
+    const prisma = {
+      jobApplication: {
+        findUnique: vi.fn().mockResolvedValue({ id: "application-1" }),
+      },
+      analysisGeneration: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as PrismaService;
+
+    const service = new AnalysisGenerationService(
+      prisma,
+      {} as ProfileService,
+      {} as AIService,
+    );
+
+    await expect(service.getStatus("application-1")).resolves.toMatchObject({
+      id: null,
+      applicationId: "application-1",
+      status: "IDLE",
+      attempts: 0,
+    });
+  });
+
   it("only advances a draft application after analysis completes", async () => {
     const generationRecord = generation({ attempts: 1 });
     const updateMany = vi.fn();

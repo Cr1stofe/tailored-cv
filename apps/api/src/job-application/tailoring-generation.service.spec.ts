@@ -154,6 +154,36 @@ describe("TailoringGenerationService", () => {
     });
   });
 
+  it("returns IDLE when no generation exists for the requested language", async () => {
+    const prisma = {
+      jobApplication: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "application-1",
+          targetLanguage: "EN",
+        }),
+      },
+      tailoringGeneration: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as PrismaService;
+
+    const service = new TailoringGenerationService(
+      prisma,
+      {} as ProfileService,
+      {} as AIService,
+    );
+
+    await expect(
+      service.getStatus("application-1", "EN"),
+    ).resolves.toMatchObject({
+      id: null,
+      applicationId: "application-1",
+      targetLanguage: "EN",
+      status: "IDLE",
+      attempts: 0,
+    });
+  });
+
   it("does not regress an advanced application status after tailoring", async () => {
     const generationRecord = generation({ attempts: 1 });
     const statusUpdate = vi.fn();
