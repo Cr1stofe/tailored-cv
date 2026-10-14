@@ -40,14 +40,23 @@ The API follows NestJS standard modular design patterns with separation of conce
 - `POST /job-applications` — Create a new job application
 - `GET /job-applications/:id` — Get detailed view including requirements and match results
 - `DELETE /job-applications/:id` — Delete an application
-- `PATCH /job-applications/:id/status` — Update application status (`DRAFT`, `ANALYZED`, `TAILORED`, `APPLIED`, etc.)
-- `POST /job-applications/:id/analyze` — Run AI analysis to extract skills, keywords, and match score
-- `POST /job-applications/:id/tailor` — Generate tailored resume reframing experience without fabricating details
+- `PATCH /job-applications/:id/status` — Update application status (`DRAFT`, `ANALYZED`, or `TAILORED`)
+- `POST /job-applications/:id/analyze` — Queue AI analysis and return `202 Accepted`
+- `GET /job-applications/:id/analyze/status` — Read analysis progress (`IDLE`, `QUEUED`, `PROCESSING`, `COMPLETED`, or `FAILED`)
+- `POST /job-applications/:id/tailor` — Queue tailored resume generation and return `202 Accepted`
+- `GET /job-applications/:id/tailor/status` — Read tailored resume progress by language
 - `GET /job-applications/:id/tailored-resume` — Fetch the generated tailored resume
+
+AI operations are processed asynchronously by a database-backed worker. The
+creation endpoints do not wait for Gemini to finish; clients should poll the
+corresponding status endpoint and then fetch the resulting resource after a
+`COMPLETED` status. A `FAILED` status exposes the last error message without
+discarding the application.
 
 ### Diagnostics
 
 - `GET /health` — Simple ping endpoint
+- `GET /health/ai` — Check the configured AI provider
 - `GET /health/ready` — Readiness probe that verifies PostgreSQL connectivity
 - `GET /health?detailed=true` — Deep probe including database latency check
 
@@ -130,3 +139,17 @@ pnpm --filter api typecheck
 # Lint files with ESLint 9
 pnpm --filter api lint
 ```
+
+### End-to-end smoke tests
+
+The web package includes Playwright smoke tests for protected-route redirects
+and login-form validation. Start the development stack first, install the
+browser once, and run:
+
+```bash
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+Use `E2E_BASE_URL` to point the tests at another local or disposable test
+environment. The smoke suite does not create, update, or delete user data.

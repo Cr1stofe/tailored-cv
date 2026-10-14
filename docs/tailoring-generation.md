@@ -26,6 +26,24 @@ POST /job-applications/:id/tailor
 GET  /job-applications/:id/tailor/status?language=PT|EN
 ```
 
+The `POST /analyze` and `POST /tailor` request bodies and responses are
+documented in the generated OpenAPI specification at `/docs`. Tailoring still
+requires a JSON object body; `targetLanguage` is optional and defaults to the
+application language when omitted.
+
+Example request:
+
+```http
+POST /job-applications/:id/tailor
+Content-Type: application/json
+
+{"targetLanguage":"EN"}
+```
+
+The `202 Accepted` response contains the persisted generation identifier and
+its initial `QUEUED` status. The client should use that status resource rather
+than keeping the original request open.
+
 O worker interno do NestJS processa uma tarefa de cada fila por vez, tenta
 novamente uma falha uma vez após um intervalo curto e recupera tarefas que
 ficaram em `PROCESSING` depois de um reinício do serviço.
@@ -37,8 +55,9 @@ ou o currículo automaticamente. Se o usuário sair da tela, o status persistido
 ## Migrações
 
 Em produção, o entrypoint aplica as migrations quando `RUN_MIGRATIONS=true`.
-No ambiente de desenvolvimento, em que essa opção permanece desativada, rode
-após atualizar o código:
+O Compose de desenvolvimento também executa `prisma migrate deploy` antes de
+iniciar a API. Em uma inicialização manual fora do Compose, rode após atualizar
+o código:
 
 ```bash
 docker exec tailored-cv-api pnpm --filter @tailored-cv/api prisma:migrate:deploy
