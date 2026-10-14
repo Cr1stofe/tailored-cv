@@ -21,6 +21,7 @@
     "docker:db": "docker compose -f compose.dev.yaml up -d postgres",
     "docker:dev": "docker compose -f compose.dev.yaml up",
     "docker:dev:d": "docker compose -f compose.dev.yaml up -d",
+    "docker:dev:observability:d": "docker compose -f compose.dev.yaml -f compose.observability.yaml --profile observability up -d",
     "docker:dev:build": "docker compose -f compose.dev.yaml up -d --build",
     "docker:prod": "docker compose -f compose.yaml up -d",
     "docker:seed": "docker exec tailored-cv-api pnpm --filter @tailored-cv/api prisma db seed",
