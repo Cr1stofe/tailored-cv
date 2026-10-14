@@ -60,34 +60,34 @@ export interface CertificationDto {
 export type SupportedLanguage = "PT" | "EN";
 
 export type TailoringGenerationStatus =
-  "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  "IDLE" | "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export interface TailoringGenerationDto {
-  id: string;
+  id: string | null;
   applicationId: string;
   targetLanguage: SupportedLanguage;
   status: TailoringGenerationStatus;
   attempts: number;
   errorMessage?: string | null;
   resumeId?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
 }
 
 export type AnalysisGenerationStatus =
-  "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  "IDLE" | "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export interface AnalysisGenerationDto {
-  id: string;
+  id: string | null;
   applicationId: string;
   status: AnalysisGenerationStatus;
   attempts: number;
   errorMessage?: string | null;
   analysisId?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
 }

@@ -81,24 +81,35 @@ export default function ApplicationDetailPage({
   }, [id]);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const scrollActiveTab = () => {
       const tabs = tabsRef.current;
       const activeButton = tabRefs.current[activeTab];
 
       if (!tabs || !activeButton) return;
 
+      const tabsRect = tabs.getBoundingClientRect();
+      const activeButtonRect = activeButton.getBoundingClientRect();
       const targetScrollLeft =
-        activeButton.offsetLeft -
-        (tabs.clientWidth - activeButton.offsetWidth) / 2;
+        tabs.scrollLeft +
+        activeButtonRect.left -
+        tabsRect.left -
+        (tabs.clientWidth - activeButtonRect.width) / 2;
+      const maxScrollLeft = tabs.scrollWidth - tabs.clientWidth;
 
-      tabs.scrollTo({
-        left: Math.max(0, targetScrollLeft),
-        behavior: "smooth",
-      });
+      tabs.scrollLeft = Math.min(Math.max(0, targetScrollLeft), maxScrollLeft);
+    };
+
+    let secondFrame = 0;
+    const frame = window.requestAnimationFrame(() => {
+      scrollActiveTab();
+      secondFrame = window.requestAnimationFrame(scrollActiveTab);
     });
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [activeTab]);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [activeTab, isLoading]);
 
   useEffect(() => {
     if (

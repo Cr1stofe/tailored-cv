@@ -153,6 +153,10 @@ export class JobApplicationController {
 
   @Get(":id/analyze/status")
   @ApiOperation({ summary: "Get job analysis generation status" })
+  @ApiResponse({
+    status: 200,
+    description: "Current analysis status, or IDLE when none was started.",
+  })
   async getAnalysisStatus(
     @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<AnalysisGenerationDto> {
@@ -190,6 +194,10 @@ export class JobApplicationController {
 
   @Get(":id/tailor/status")
   @ApiOperation({ summary: "Get tailored resume generation status" })
+  @ApiResponse({
+    status: 200,
+    description: "Current tailoring status, or IDLE when none was started.",
+  })
   @ApiQuery({
     name: "language",
     required: false,

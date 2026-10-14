@@ -150,11 +150,7 @@ export class TailoringGenerationService
       orderBy: { createdAt: "desc" },
     });
 
-    if (!generation) {
-      throw new NotFoundException(
-        `No tailoring generation found for application ${applicationId}`,
-      );
-    }
+    if (!generation) return this.idleStatus(applicationId, language);
 
     return this.mapGeneration(generation);
   }
@@ -331,6 +327,25 @@ export class TailoringGenerationService
       updatedAt: generation.updatedAt.toISOString(),
       startedAt: generation.startedAt?.toISOString() || null,
       completedAt: generation.completedAt?.toISOString() || null,
+    };
+  }
+
+  private idleStatus(
+    applicationId: string,
+    targetLanguage: SupportedLanguage,
+  ): TailoringGenerationDto {
+    return {
+      id: null,
+      applicationId,
+      targetLanguage,
+      status: "IDLE",
+      attempts: 0,
+      errorMessage: null,
+      resumeId: null,
+      createdAt: null,
+      updatedAt: null,
+      startedAt: null,
+      completedAt: null,
     };
   }
 }

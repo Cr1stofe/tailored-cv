@@ -131,8 +131,8 @@ export function JobAnalysisTab({
                 {score}
                 <span className={styles.gaugePercent}>%</span>
               </div>
-              <span className={styles.gaugeCaption}>Match Técnico</span>
             </div>
+            <span className={styles.gaugeCaption}>Match Técnico</span>
           </div>
 
           <div className={styles.heroContent}>

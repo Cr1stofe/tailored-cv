@@ -389,8 +389,9 @@
 .radialGaugeWrapper {
   position: relative;
   width: 150px;
-  height: 150px;
+  height: 180px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
@@ -417,7 +418,10 @@
 
   .gaugeTextCenter {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 150px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -440,15 +444,15 @@
       color: #94a3b8;
       margin-left: 1px;
     }
+  }
 
-    .gaugeCaption {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #94a3b8;
-      margin-top: 0.25rem;
-    }
+  > .gaugeCaption {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-top: 0.6rem;
   }
 }
 
