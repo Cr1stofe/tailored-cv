@@ -3,7 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Sparkles, FileCheck, FileText } from "lucide-react";
+import { ArrowLeft, Sparkles, FileCheck, FileText, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import {
@@ -20,6 +20,7 @@ import { ApplicationTopBar } from "./components/ApplicationTopBar";
 import { JobDescriptionTab } from "./components/JobDescriptionTab";
 import { JobAnalysisTab } from "./components/JobAnalysisTab";
 import { TailoredResumeTab } from "./components/TailoredResumeTab";
+import { ApplicationEmailTab } from "./components/ApplicationEmailTab";
 import styles from "./application-detail.module.scss";
 
 export default function ApplicationDetailPage({
@@ -39,9 +40,9 @@ export default function ApplicationDetailPage({
   const [tailoredResumes, setTailoredResumes] = useState<TailoredResumeDto[]>(
     [],
   );
-  const [activeTab, setActiveTab] = useState<"job" | "analysis" | "resume">(
-    "job",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "job" | "analysis" | "resume" | "email"
+  >("job");
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -480,6 +481,18 @@ export default function ApplicationDetailPage({
           <FileCheck size={16} />
           <span>Currículo Adaptado</span>
         </button>
+
+        <button
+          type="button"
+          ref={(element) => {
+            tabRefs.current.email = element;
+          }}
+          className={`${styles.tabButton} ${activeTab === "email" ? styles.active : ""}`}
+          onClick={() => setActiveTab("email")}
+        >
+          <Mail size={16} />
+          <span>E-mail</span>
+        </button>
       </div>
 
       {activeTab === "job" && (
@@ -508,6 +521,14 @@ export default function ApplicationDetailPage({
           onTailor={handleTailor}
           onSaveResume={handleSaveResume}
           onCancelEditing={cancelEditing}
+        />
+      )}
+
+      {activeTab === "email" && (
+        <ApplicationEmailTab
+          application={application}
+          profile={profile}
+          tailoredResume={tailoredResume}
         />
       )}
 
