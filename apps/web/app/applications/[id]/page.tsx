@@ -31,6 +31,10 @@ import { JobAnalysisTab } from "./components/JobAnalysisTab";
 import { TailoredResumeTab } from "./components/TailoredResumeTab";
 import { ApplicationEmailTab } from "./components/ApplicationEmailTab";
 import { ApplicationCoverLetterTab } from "./components/ApplicationCoverLetterTab";
+import {
+  createCoverLetter,
+  getCoverLetterDraftKey,
+} from "./components/cover-letter-draft";
 import styles from "./application-detail.module.scss";
 
 export default function ApplicationDetailPage({
@@ -66,6 +70,9 @@ export default function ApplicationDetailPage({
     useState<CoverLetterFocus>("frontend");
   const [coverLetterGeneration, setCoverLetterGeneration] =
     useState<CoverLetterGenerationDto | null>(null);
+  const [coverLetterDrafts, setCoverLetterDrafts] = useState<
+    Record<string, string>
+  >({});
 
   const [isEditingResume, setIsEditingResume] = useState(false);
   const [isSavingResume, setIsSavingResume] = useState(false);
@@ -75,6 +82,7 @@ export default function ApplicationDetailPage({
   const [tailorLanguage, setTailorLanguage] = useState<"PT" | "EN">("PT");
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const coverLetterRequestVersion = useRef(0);
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -213,6 +221,7 @@ export default function ApplicationDetailPage({
 
   useEffect(() => {
     if (!application) return;
+    const requestVersion = ++coverLetterRequestVersion.current;
     let cancelled = false;
 
     void api
@@ -221,10 +230,31 @@ export default function ApplicationDetailPage({
         focus: coverLetterFocus,
       })
       .then((status) => {
-        if (!cancelled) setCoverLetterGeneration(status);
+        if (
+          !cancelled &&
+          requestVersion === coverLetterRequestVersion.current
+        ) {
+          setCoverLetterGeneration(status);
+          if (status.status === "COMPLETED" && status.content) {
+            const key = getCoverLetterDraftKey(
+              coverLetterLanguage,
+              coverLetterFocus,
+            );
+            setCoverLetterDrafts((current) =>
+              current[key] === undefined
+                ? { ...current, [key]: status.content! }
+                : current,
+            );
+          }
+        }
       })
       .catch(() => {
-        if (!cancelled) setCoverLetterGeneration(null);
+        if (
+          !cancelled &&
+          requestVersion === coverLetterRequestVersion.current
+        ) {
+          setCoverLetterGeneration(null);
+        }
       });
 
     return () => {
@@ -241,13 +271,27 @@ export default function ApplicationDetailPage({
       return;
     }
 
+    const requestVersion = ++coverLetterRequestVersion.current;
+
     const poll = window.setInterval(async () => {
       try {
         const latest = await api.getCoverLetterStatus(application.id, {
           targetLanguage: coverLetterLanguage,
           focus: coverLetterFocus,
         });
+        if (requestVersion !== coverLetterRequestVersion.current) return;
         setCoverLetterGeneration(latest);
+
+        if (latest.status === "COMPLETED" && latest.content) {
+          const key = getCoverLetterDraftKey(
+            coverLetterLanguage,
+            coverLetterFocus,
+          );
+          setCoverLetterDrafts((current) => ({
+            ...current,
+            [key]: latest.content!,
+          }));
+        }
 
         if (latest.status === "COMPLETED") {
           toast.success("Carta de apresentação gerada com IA.");
@@ -266,9 +310,10 @@ export default function ApplicationDetailPage({
 
     return () => window.clearInterval(poll);
   }, [
-    application,
+    application?.id,
     coverLetterFocus,
-    coverLetterGeneration,
+    coverLetterGeneration?.id,
+    coverLetterGeneration?.status,
     coverLetterLanguage,
   ]);
 
@@ -385,6 +430,7 @@ export default function ApplicationDetailPage({
   };
 
   const handleGenerateCoverLetter = async () => {
+    ++coverLetterRequestVersion.current;
     try {
       const generation = await api.enqueueCoverLetter(id, {
         targetLanguage: coverLetterLanguage,
@@ -480,6 +526,19 @@ export default function ApplicationDetailPage({
   }
 
   const analysis = application.jobAnalysis;
+  const coverLetterDraftKey = getCoverLetterDraftKey(
+    coverLetterLanguage,
+    coverLetterFocus,
+  );
+  const coverLetterDraft =
+    coverLetterDrafts[coverLetterDraftKey] ??
+    createCoverLetter(
+      application,
+      profile,
+      tailoredResume,
+      coverLetterLanguage,
+      coverLetterFocus,
+    );
 
   return (
     <div className={styles.container}>
@@ -645,10 +704,16 @@ export default function ApplicationDetailPage({
       {activeTab === "cover-letter" && (
         <ApplicationCoverLetterTab
           application={application}
-          profile={profile}
           tailoredResume={tailoredResume}
           focus={coverLetterFocus}
           generation={coverLetterGeneration}
+          body={coverLetterDraft}
+          onBodyChange={(body) =>
+            setCoverLetterDrafts((current) => ({
+              ...current,
+              [coverLetterDraftKey]: body,
+            }))
+          }
           onFocusChange={setCoverLetterFocus}
           onGenerateWithAi={handleGenerateCoverLetter}
         />

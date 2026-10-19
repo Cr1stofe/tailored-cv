@@ -1,70 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Copy, Download, FileSignature, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type {
   CoverLetterFocus,
   CoverLetterGenerationDto,
   JobApplicationDto,
-  MasterProfileDto,
   TailoredResumeDto,
 } from "@tailored-cv/types";
 import styles from "../application-detail.module.scss";
 import {
   copyCoverLetter,
-  createCoverLetter,
   getCoverLetterTitle,
   resolveCoverLetterLanguage,
 } from "./cover-letter-draft";
 
 interface ApplicationCoverLetterTabProps {
   application: JobApplicationDto;
-  profile: MasterProfileDto | null;
   tailoredResume: TailoredResumeDto | null;
   focus: CoverLetterFocus;
   generation: CoverLetterGenerationDto | null;
+  body: string;
+  onBodyChange: (body: string) => void;
   onFocusChange: (focus: CoverLetterFocus) => void;
   onGenerateWithAi: () => void;
 }
 
 export function ApplicationCoverLetterTab({
   application,
-  profile,
   tailoredResume,
   focus,
   generation,
+  body,
+  onBodyChange,
   onFocusChange,
   onGenerateWithAi,
 }: ApplicationCoverLetterTabProps) {
   const language = resolveCoverLetterLanguage(application, tailoredResume);
-  const [body, setBody] = useState(() =>
-    createCoverLetter(
-      application,
-      profile,
-      tailoredResume,
-      language,
-      "frontend",
-    ),
-  );
-
-  useEffect(() => {
-    setBody(
-      createCoverLetter(
-        application,
-        profile,
-        tailoredResume,
-        resolveCoverLetterLanguage(application, tailoredResume),
-        focus,
-      ),
-    );
-  }, [application, profile, tailoredResume, focus]);
-
-  useEffect(() => {
-    if (generation?.status === "COMPLETED" && generation.content) {
-      setBody(generation.content);
-    }
-  }, [generation]);
 
   const title = getCoverLetterTitle(language, focus);
 
@@ -140,7 +112,7 @@ export function ApplicationCoverLetterTab({
           <span>Conteúdo da carta</span>
           <textarea
             value={body}
-            onChange={(event) => setBody(event.target.value)}
+            onChange={(event) => onBodyChange(event.target.value)}
             rows={18}
           />
         </label>

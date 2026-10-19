@@ -7,6 +7,13 @@ import type {
 
 export type CoverLetterFocus = "frontend" | "fullstack";
 
+export function getCoverLetterDraftKey(
+  language: SupportedLanguage,
+  focus: CoverLetterFocus,
+): string {
+  return `${language}:${focus}`;
+}
+
 export function resolveCoverLetterLanguage(
   application: JobApplicationDto,
   tailoredResume: TailoredResumeDto | null,

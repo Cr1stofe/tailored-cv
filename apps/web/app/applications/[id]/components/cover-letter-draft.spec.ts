@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   copyCoverLetter,
   createCoverLetter,
+  getCoverLetterDraftKey,
   resolveCoverLetterLanguage,
 } from "./cover-letter-draft";
 
@@ -24,6 +25,12 @@ const profile = {
 } as unknown as MasterProfileDto;
 
 describe("cover letter draft", () => {
+  it("uses an independent draft key for each language and focus", () => {
+    expect(getCoverLetterDraftKey("PT", "frontend")).toBe("PT:frontend");
+    expect(getCoverLetterDraftKey("PT", "fullstack")).toBe("PT:fullstack");
+    expect(getCoverLetterDraftKey("EN", "frontend")).toBe("EN:frontend");
+  });
+
   it("uses the tailored resume language and factual content", () => {
     const resume = {
       language: "PT",

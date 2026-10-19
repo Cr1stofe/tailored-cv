@@ -21,6 +21,7 @@ const baseInput: CoverLetterInput = {
     ],
     experiences: [
       {
+        id: "experience-olivas",
         company: "Olivas Digital",
         position: "Desenvolvedor Frontend",
         startDate: "2023-01",
@@ -34,6 +35,7 @@ const baseInput: CoverLetterInput = {
     ],
     projects: [
       {
+        id: "project-veltro",
         name: "Veltro LMS",
         description: "Plataforma de ensino full stack.",
         technologies: ["Next.js", "NestJS", "PostgreSQL", "Prisma"],
@@ -209,5 +211,59 @@ describe("generateCoverLetterWithGemini", () => {
     expect(result.content).toMatch(/Sincerely,\nCristofe Albuquerque$/);
     expect(prompt).not.toContain("Escreva inteiramente em português");
     expect(prompt).not.toContain("Atenciosamente,");
+  });
+
+  it("maps tailored resume source IDs to evidence catalog groups", async () => {
+    const tailoredInput: CoverLetterInput = {
+      ...baseInput,
+      tailoredResume: {
+        applicationId: "application-1",
+        version: 1,
+        title: "Full Stack Developer",
+        language: "PT",
+        reframedSummary: "Experiência com aplicações web.",
+        highlightedSkills: ["React", "Node.js"],
+        tailoredExperiences: [
+          {
+            experienceId: "experience-olivas",
+            company: "Olivas Digital",
+            position: "Desenvolvedor Frontend",
+            period: "01/2023 – Presente",
+            reframedHighlights: [
+              "Desenvolvi o frontend do Ranking dos Políticos.",
+            ],
+            technologies: ["React"],
+          },
+        ],
+        tailoredProjects: [
+          {
+            projectId: "project-veltro",
+            name: "Veltro LMS",
+            description: "Plataforma de ensino full stack.",
+            reframedHighlights: ["Implementei sessões seguras."],
+            technologies: ["NestJS"],
+          },
+        ],
+        generationReport: {
+          highlighted: [],
+          removed: [],
+          uncovered_requirements: [],
+          match_score: 80,
+          match_explanation: "",
+          warnings: [],
+        },
+      },
+    };
+    const { client, generate } = createClient(
+      JSON.stringify({ evidenceParagraphs: validEvidenceParagraphs() }),
+    );
+
+    await generateCoverLetterWithGemini(client, tailoredInput);
+
+    const prompt = String(generate.mock.calls[0]?.[0]);
+    expect(prompt).toContain('"experienceCatalogGroups": [\n    "EXP_1"\n  ]');
+    expect(prompt).toContain('"projectCatalogGroups": [\n    "PROJECT_1"\n  ]');
+    expect(prompt).not.toContain("experience-olivas");
+    expect(prompt).not.toContain("project-veltro");
   });
 });

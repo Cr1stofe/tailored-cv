@@ -13,6 +13,7 @@ const MAX_PARAGRAPH_WORDS = 80;
 interface EvidenceFact {
   id: string;
   source: "profile" | "skill" | "experience" | "project";
+  groupId?: string;
   text: string;
 }
 
@@ -45,6 +46,7 @@ function buildEvidenceCatalog(input: CoverLetterInput): EvidenceFact[] {
     facts.push({
       id: `${prefix}_ROLE`,
       source: "experience",
+      groupId: prefix,
       text: `${experience.position} at ${experience.company}`,
     });
 
@@ -52,6 +54,7 @@ function buildEvidenceCatalog(input: CoverLetterInput): EvidenceFact[] {
       facts.push({
         id: `${prefix}_TECHNOLOGIES`,
         source: "experience",
+        groupId: prefix,
         text: `Technologies used: ${experience.technologies.join(", ")}`,
       });
     }
@@ -60,6 +63,7 @@ function buildEvidenceCatalog(input: CoverLetterInput): EvidenceFact[] {
       facts.push({
         id: `${prefix}_FACT_${highlightIndex + 1}`,
         source: "experience",
+        groupId: prefix,
         text: highlight,
       });
     });
@@ -72,6 +76,7 @@ function buildEvidenceCatalog(input: CoverLetterInput): EvidenceFact[] {
       facts.push({
         id: `${prefix}_DESCRIPTION`,
         source: "project",
+        groupId: prefix,
         text: `${project.name}: ${project.description.trim()}`,
       });
     }
@@ -80,6 +85,7 @@ function buildEvidenceCatalog(input: CoverLetterInput): EvidenceFact[] {
       facts.push({
         id: `${prefix}_TECHNOLOGIES`,
         source: "project",
+        groupId: prefix,
         text: `${project.name} technologies: ${project.technologies.join(", ")}`,
       });
     }
@@ -88,6 +94,7 @@ function buildEvidenceCatalog(input: CoverLetterInput): EvidenceFact[] {
       facts.push({
         id: `${prefix}_FACT_${highlightIndex + 1}`,
         source: "project",
+        groupId: prefix,
         text: `${project.name}: ${highlight}`,
       });
     });
@@ -111,18 +118,47 @@ function buildLanguageInstructions(input: CoverLetterInput): string {
 - Use tom direto e factual, sem autoavaliações ou adjetivos promocionais.`.trim();
 }
 
-function buildRelevanceGuide(input: CoverLetterInput): object | null {
+function buildRelevanceGuide(input: CoverLetterInput): {
+  highlightedSkills: string[];
+  experienceCatalogGroups: string[];
+  projectCatalogGroups: string[];
+} | null {
   if (!input.tailoredResume) return null;
+
+  const getCatalogGroups = (
+    source: "experience" | "project",
+    sourceIds: Array<string | undefined>,
+  ) =>
+    sourceIds
+      .map((sourceId) => {
+        if (!sourceId) return null;
+        const sourceItems =
+          source === "experience"
+            ? input.masterProfile.experiences
+            : input.masterProfile.projects;
+        const sourceIndex = sourceItems.findIndex(
+          (item) => item.id === sourceId,
+        );
+        return sourceIndex >= 0
+          ? `${source === "experience" ? "EXP" : "PROJECT"}_${sourceIndex + 1}`
+          : null;
+      })
+      .filter((groupId): groupId is string => Boolean(groupId));
 
   return {
     highlightedSkills: input.tailoredResume.highlightedSkills,
-    experienceIds: input.tailoredResume.tailoredExperiences
-      .map((experience) => experience.experienceId)
-      .filter(Boolean),
-    projectIds:
-      input.tailoredResume.tailoredProjects
-        ?.map((project) => project.projectId)
-        .filter(Boolean) || [],
+    experienceCatalogGroups: getCatalogGroups(
+      "experience",
+      input.tailoredResume.tailoredExperiences.map(
+        (experience) => experience.experienceId,
+      ),
+    ),
+    projectCatalogGroups: getCatalogGroups(
+      "project",
+      input.tailoredResume.tailoredProjects?.map(
+        (project) => project.projectId,
+      ) || [],
+    ),
   };
 }
 
@@ -171,6 +207,7 @@ ${JSON.stringify(
 # RELEVANCE GUIDE
 This optional guide may help select facts, but it is not a factual source:
 ${JSON.stringify(buildRelevanceGuide(input), null, 2)}
+- The guide's experienceCatalogGroups and projectCatalogGroups contain groupId values from the evidence catalog. Prefer facts from those groups when they are relevant.
 
 # EVIDENCE CATALOG
 ${JSON.stringify(evidenceCatalog, null, 2)}
