@@ -92,6 +92,24 @@ export interface AnalysisGenerationDto {
   completedAt?: string | null;
 }
 
+export type CoverLetterGenerationStatus =
+  "IDLE" | "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface CoverLetterGenerationDto {
+  id: string | null;
+  applicationId: string;
+  targetLanguage: SupportedLanguage;
+  focus: CoverLetterFocus;
+  status: CoverLetterGenerationStatus;
+  attempts: number;
+  errorMessage?: string | null;
+  content?: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
 export interface MasterProfileDto {
   id?: string;
   fullName: string;
@@ -232,6 +250,22 @@ export interface TailorResumeInput {
   targetLanguage?: SupportedLanguage;
 }
 
+export type CoverLetterFocus = "frontend" | "fullstack";
+
+export interface CoverLetterInput {
+  jobDescription: string;
+  company: string;
+  position: string;
+  masterProfile: MasterProfileDto;
+  tailoredResume?: TailoredResumeDto | null;
+  targetLanguage?: SupportedLanguage;
+  focus?: CoverLetterFocus;
+}
+
+export interface CoverLetterOutput {
+  content: string;
+}
+
 export interface AIHealthStatus {
   status: "connected" | "error";
   provider: string;
@@ -255,6 +289,7 @@ export interface AIProvider {
       "id" | "applicationId" | "version" | "createdAt" | "updatedAt"
     >
   >;
+  generateCoverLetter(input: CoverLetterInput): Promise<CoverLetterOutput>;
   translateProfileToEnglish(
     profile: MasterProfileDto,
   ): Promise<MasterProfileDto>;

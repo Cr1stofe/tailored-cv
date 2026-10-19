@@ -1,6 +1,8 @@
 import { Logger } from "@nestjs/common";
 import type {
   AIHealthStatus,
+  CoverLetterInput,
+  CoverLetterOutput,
   MasterProfileDto,
   ExperienceDto,
   ProjectDto,
@@ -171,6 +173,48 @@ export class MockProvider implements AIProvider {
     );
     const quality = validateTailoredResume(input, ordered);
     return withGenerationReport(input, ordered, quality);
+  }
+
+  async generateCoverLetter(
+    input: CoverLetterInput,
+  ): Promise<CoverLetterOutput> {
+    const isEnglish = input.targetLanguage === "EN";
+    const summary =
+      input.tailoredResume?.reframedSummary || input.masterProfile.summary;
+    const skills = (
+      input.tailoredResume?.highlightedSkills ||
+      input.masterProfile.skills.map((skill) => skill.name)
+    )
+      .slice(0, 5)
+      .join(", ");
+
+    return {
+      content: isEnglish
+        ? [
+            "Dear Hiring Manager,",
+            `I am writing to apply for the ${input.position} role at ${input.company}. My experience in ${input.focus === "frontend" ? "front-end" : "full-stack"} development has prepared me to contribute with practical, production-focused solutions.`,
+            summary ||
+              "My background combines hands-on technical experience with a practical and collaborative approach to software delivery.",
+            skills
+              ? `My relevant experience includes ${skills}.`
+              : "My professional background aligns well with the needs of this role.",
+            "I would welcome the opportunity to discuss how I can contribute to your team.",
+            "Sincerely,",
+            input.masterProfile.fullName,
+          ].join("\n\n")
+        : [
+            "Prezado time de recrutamento,",
+            `Gostaria de me candidatar à vaga de ${input.position} em ${input.company}. Minha experiência em ${input.focus === "frontend" ? "desenvolvimento front-end" : "desenvolvimento full-stack"} me preparou para contribuir com soluções práticas e orientadas à produção.`,
+            summary ||
+              "Meu perfil combina experiência técnica prática com uma abordagem colaborativa e orientada à entrega de soluções confiáveis.",
+            skills
+              ? `Minha experiência relevante inclui ${skills}.`
+              : "Minha experiência profissional está alinhada às necessidades desta oportunidade.",
+            "Gostaria de ter a oportunidade de conversar sobre como posso contribuir com a equipe.",
+            "Atenciosamente,",
+            input.masterProfile.fullName,
+          ].join("\n\n"),
+    };
   }
 
   async translateProfileToEnglish(

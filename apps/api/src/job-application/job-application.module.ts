@@ -5,6 +5,7 @@ import { ProfileModule } from "../profile/profile.module";
 import { AIModule } from "../ai/ai.module";
 import { TailoringGenerationService } from "./tailoring-generation.service";
 import { AnalysisGenerationService } from "./analysis-generation.service";
+import { CoverLetterGenerationService } from "./cover-letter-generation.service";
 
 @Module({
   imports: [ProfileModule, AIModule],
@@ -13,6 +14,7 @@ import { AnalysisGenerationService } from "./analysis-generation.service";
     JobApplicationService,
     TailoringGenerationService,
     AnalysisGenerationService,
+    CoverLetterGenerationService,
   ],
   exports: [JobApplicationService],
 })

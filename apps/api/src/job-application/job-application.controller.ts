@@ -25,6 +25,8 @@ import type {
 import {
   createJobApplicationSchema,
   tailorResumeRequestSchema,
+  coverLetterRequestSchema,
+  coverLetterStatusQuerySchema,
   tailoredResumeFormSchema,
   updateJobApplicationStatusSchema,
   tailoringStatusQuerySchema,
@@ -217,6 +219,44 @@ export class JobApplicationController {
   @ApiOperation({ summary: "Get the tailored resume" })
   async getTailoredResume(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.jobApplicationService.getTailoredResume(id);
+  }
+
+  @Post(":id/cover-letter")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: "Queue an AI cover letter generation" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        targetLanguage: { type: "string", enum: ["PT", "EN"] },
+        focus: { type: "string", enum: ["frontend", "fullstack"] },
+      },
+    },
+  })
+  async generateCoverLetter(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(coverLetterRequestSchema))
+    body: {
+      targetLanguage?: SupportedLanguage;
+      focus: "frontend" | "fullstack";
+    },
+  ) {
+    return this.jobApplicationService.enqueueCoverLetter(id, body);
+  }
+
+  @Get(":id/cover-letter/status")
+  @ApiOperation({ summary: "Get cover letter generation status" })
+  @ApiQuery({ name: "targetLanguage", required: false, enum: ["PT", "EN"] })
+  @ApiQuery({ name: "focus", required: false, enum: ["frontend", "fullstack"] })
+  async getCoverLetterStatus(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Query(new ZodValidationPipe(coverLetterStatusQuerySchema))
+    query: {
+      targetLanguage?: SupportedLanguage;
+      focus: "frontend" | "fullstack";
+    },
+  ) {
+    return this.jobApplicationService.getCoverLetterStatus(id, query);
   }
 
   @Put(":id/tailored-resume")

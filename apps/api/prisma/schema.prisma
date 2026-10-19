@@ -46,6 +46,13 @@ enum AnalysisGenerationStatus {
   FAILED
 }
 
+enum CoverLetterGenerationStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model Profile {
   id           String   @id @default(uuid())
   fullName     String   @map("full_name")
@@ -172,6 +179,7 @@ model JobApplication {
   tailoredResumes TailoredResume[]
   tailoringGenerations TailoringGeneration[]
   analysisGenerations  AnalysisGeneration[]
+  coverLetterGenerations CoverLetterGeneration[]
 
   @@index([profileId])
   @@map("job_applications")
@@ -217,6 +225,28 @@ model AnalysisGeneration {
   @@index([applicationId, createdAt])
   @@index([status, availableAt, createdAt])
   @@map("analysis_generations")
+}
+
+model CoverLetterGeneration {
+  id             String                    @id @default(uuid())
+  applicationId  String                    @map("application_id")
+  targetLanguage String                    @default("PT") @map("target_language")
+  focus          String                    @default("frontend")
+  status         CoverLetterGenerationStatus @default(QUEUED)
+  attempts       Int                      @default(0)
+  errorMessage   String?                   @map("error_message") @db.Text
+  content        String?                   @db.Text
+  availableAt    DateTime                 @default(now()) @map("available_at")
+  startedAt      DateTime?                @map("started_at")
+  completedAt    DateTime?                @map("completed_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, targetLanguage, focus, createdAt])
+  @@index([status, availableAt, createdAt])
+  @@map("cover_letter_generations")
 }
 
 model JobAnalysis {

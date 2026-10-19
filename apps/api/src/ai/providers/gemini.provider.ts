@@ -1,6 +1,8 @@
 import type { AIHealthStatus, MasterProfileDto } from "@tailored-cv/types";
 import type {
   AIProvider,
+  CoverLetterInput,
+  CoverLetterOutput,
   JobAnalysisInput,
   JobAnalysisOutput,
   TailorResumeInput,
@@ -10,6 +12,7 @@ import { GeminiClient } from "./gemini/gemini-client";
 import { analyzeJobWithGemini } from "./gemini/job-analyzer";
 import { translateProfileWithGemini } from "./gemini/profile-translator";
 import { tailorResumeWithGemini } from "./gemini/resume-tailor";
+import { generateCoverLetterWithGemini } from "./gemini/cover-letter";
 
 export class GeminiProvider implements AIProvider {
   private readonly client: GeminiClient;
@@ -28,6 +31,10 @@ export class GeminiProvider implements AIProvider {
 
   tailorResume(input: TailorResumeInput): Promise<TailoredResumeOutput> {
     return tailorResumeWithGemini(this.client, input);
+  }
+
+  generateCoverLetter(input: CoverLetterInput): Promise<CoverLetterOutput> {
+    return generateCoverLetterWithGemini(this.client, input);
   }
 
   translateProfileToEnglish(

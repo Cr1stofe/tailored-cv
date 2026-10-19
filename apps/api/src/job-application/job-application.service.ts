@@ -13,6 +13,7 @@ import {
   JobApplicationFiltersDto,
   TailoringGenerationDto,
   AnalysisGenerationDto,
+  CoverLetterFocus,
 } from "@tailored-cv/types";
 import {
   CreateJobApplicationInput,
@@ -21,6 +22,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { TailoringGenerationService } from "./tailoring-generation.service";
 import { AnalysisGenerationService } from "./analysis-generation.service";
+import { CoverLetterGenerationService } from "./cover-letter-generation.service";
 
 @Injectable()
 export class JobApplicationService {
@@ -29,6 +31,7 @@ export class JobApplicationService {
     private readonly profileService: ProfileService,
     private readonly tailoringGenerationService?: TailoringGenerationService,
     private readonly analysisGenerationService?: AnalysisGenerationService,
+    private readonly coverLetterGenerationService?: CoverLetterGenerationService,
   ) {}
 
   async findAll(
@@ -275,6 +278,28 @@ export class JobApplicationService {
       createdAt: resume.createdAt.toISOString(),
       updatedAt: resume.updatedAt.toISOString(),
     };
+  }
+
+  async enqueueCoverLetter(
+    applicationId: string,
+    options: { targetLanguage?: SupportedLanguage; focus: CoverLetterFocus },
+  ) {
+    if (!this.coverLetterGenerationService) {
+      throw new Error("Cover letter generation service is not configured");
+    }
+
+    return this.coverLetterGenerationService.enqueue(applicationId, options);
+  }
+
+  async getCoverLetterStatus(
+    applicationId: string,
+    options: { targetLanguage?: SupportedLanguage; focus: CoverLetterFocus },
+  ) {
+    if (!this.coverLetterGenerationService) {
+      throw new Error("Cover letter generation service is not configured");
+    }
+
+    return this.coverLetterGenerationService.getStatus(applicationId, options);
   }
 
   async updateTailoredResume(

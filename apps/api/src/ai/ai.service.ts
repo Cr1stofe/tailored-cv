@@ -4,6 +4,8 @@ import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import type { AIHealthStatus, MasterProfileDto } from "@tailored-cv/types";
 import {
   AIProvider,
+  CoverLetterInput,
+  CoverLetterOutput,
   JobAnalysisInput,
   TailorResumeInput,
   JobAnalysisOutput,
@@ -55,6 +57,14 @@ export class AIService implements AIProvider {
   async tailorResume(input: TailorResumeInput): Promise<TailoredResumeOutput> {
     return this.observe("tailor_resume", () =>
       this.provider.tailorResume(input),
+    );
+  }
+
+  async generateCoverLetter(
+    input: CoverLetterInput,
+  ): Promise<CoverLetterOutput> {
+    return this.observe("generate_cover_letter", () =>
+      this.provider.generateCoverLetter(input),
     );
   }
 
