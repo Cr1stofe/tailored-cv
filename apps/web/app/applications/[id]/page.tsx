@@ -3,7 +3,14 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Sparkles, FileCheck, FileText, Mail } from "lucide-react";
+import {
+  ArrowLeft,
+  Sparkles,
+  FileCheck,
+  FileText,
+  Mail,
+  FileSignature,
+} from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import {
@@ -12,6 +19,8 @@ import {
   MasterProfileDto,
   TailoringGenerationDto,
   AnalysisGenerationDto,
+  CoverLetterFocus,
+  CoverLetterGenerationDto,
 } from "@tailored-cv/types";
 import type { TailoredResumeFormInput } from "@tailored-cv/validation";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal/DeleteConfirmModal";
@@ -21,6 +30,11 @@ import { JobDescriptionTab } from "./components/JobDescriptionTab";
 import { JobAnalysisTab } from "./components/JobAnalysisTab";
 import { TailoredResumeTab } from "./components/TailoredResumeTab";
 import { ApplicationEmailTab } from "./components/ApplicationEmailTab";
+import { ApplicationCoverLetterTab } from "./components/ApplicationCoverLetterTab";
+import {
+  createCoverLetter,
+  getCoverLetterDraftKey,
+} from "./components/cover-letter-draft";
 import styles from "./application-detail.module.scss";
 
 export default function ApplicationDetailPage({
@@ -41,7 +55,7 @@ export default function ApplicationDetailPage({
     [],
   );
   const [activeTab, setActiveTab] = useState<
-    "job" | "analysis" | "resume" | "email"
+    "job" | "analysis" | "resume" | "email" | "cover-letter"
   >("job");
 
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +66,13 @@ export default function ApplicationDetailPage({
     useState<AnalysisGenerationDto | null>(null);
   const [tailoringGeneration, setTailoringGeneration] =
     useState<TailoringGenerationDto | null>(null);
+  const [coverLetterFocus, setCoverLetterFocus] =
+    useState<CoverLetterFocus>("frontend");
+  const [coverLetterGeneration, setCoverLetterGeneration] =
+    useState<CoverLetterGenerationDto | null>(null);
+  const [coverLetterDrafts, setCoverLetterDrafts] = useState<
+    Record<string, string>
+  >({});
 
   const [isEditingResume, setIsEditingResume] = useState(false);
   const [isSavingResume, setIsSavingResume] = useState(false);
@@ -61,6 +82,7 @@ export default function ApplicationDetailPage({
   const [tailorLanguage, setTailorLanguage] = useState<"PT" | "EN">("PT");
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const coverLetterRequestVersion = useRef(0);
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
@@ -194,6 +216,107 @@ export default function ApplicationDetailPage({
     return () => window.clearInterval(poll);
   }, [id, analysisGeneration]);
 
+  const coverLetterLanguage =
+    tailoredResume?.language || application?.targetLanguage || "PT";
+
+  useEffect(() => {
+    if (!application) return;
+    const requestVersion = ++coverLetterRequestVersion.current;
+    let cancelled = false;
+
+    void api
+      .getCoverLetterStatus(application.id, {
+        targetLanguage: coverLetterLanguage,
+        focus: coverLetterFocus,
+      })
+      .then((status) => {
+        if (
+          !cancelled &&
+          requestVersion === coverLetterRequestVersion.current
+        ) {
+          setCoverLetterGeneration(status);
+          if (status.status === "COMPLETED" && status.content) {
+            const key = getCoverLetterDraftKey(
+              coverLetterLanguage,
+              coverLetterFocus,
+            );
+            setCoverLetterDrafts((current) =>
+              current[key] === undefined
+                ? { ...current, [key]: status.content! }
+                : current,
+            );
+          }
+        }
+      })
+      .catch(() => {
+        if (
+          !cancelled &&
+          requestVersion === coverLetterRequestVersion.current
+        ) {
+          setCoverLetterGeneration(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [application?.id, coverLetterFocus, coverLetterLanguage]);
+
+  useEffect(() => {
+    if (
+      !application ||
+      !coverLetterGeneration ||
+      !["QUEUED", "PROCESSING"].includes(coverLetterGeneration.status)
+    ) {
+      return;
+    }
+
+    const requestVersion = ++coverLetterRequestVersion.current;
+
+    const poll = window.setInterval(async () => {
+      try {
+        const latest = await api.getCoverLetterStatus(application.id, {
+          targetLanguage: coverLetterLanguage,
+          focus: coverLetterFocus,
+        });
+        if (requestVersion !== coverLetterRequestVersion.current) return;
+        setCoverLetterGeneration(latest);
+
+        if (latest.status === "COMPLETED" && latest.content) {
+          const key = getCoverLetterDraftKey(
+            coverLetterLanguage,
+            coverLetterFocus,
+          );
+          setCoverLetterDrafts((current) => ({
+            ...current,
+            [key]: latest.content!,
+          }));
+        }
+
+        if (latest.status === "COMPLETED") {
+          toast.success("Carta de apresentação gerada com IA.");
+        }
+
+        if (latest.status === "FAILED") {
+          toast.error(
+            latest.errorMessage ||
+              "Não foi possível gerar a carta de apresentação.",
+          );
+        }
+      } catch {
+        // A temporary polling failure should not interrupt the worker.
+      }
+    }, 2_500);
+
+    return () => window.clearInterval(poll);
+  }, [
+    application?.id,
+    coverLetterFocus,
+    coverLetterGeneration?.id,
+    coverLetterGeneration?.status,
+    coverLetterLanguage,
+  ]);
+
   async function loadAnalysisStatus() {
     try {
       const generation = await api.getAnalysisStatus(id);
@@ -306,6 +429,27 @@ export default function ApplicationDetailPage({
     }
   };
 
+  const handleGenerateCoverLetter = async () => {
+    ++coverLetterRequestVersion.current;
+    try {
+      const generation = await api.enqueueCoverLetter(id, {
+        targetLanguage: coverLetterLanguage,
+        focus: coverLetterFocus,
+      });
+      setCoverLetterGeneration(generation);
+      setActiveTab("cover-letter");
+      toast.info(
+        "A geração foi iniciada. Você pode continuar navegando enquanto processamos.",
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível gerar a carta de apresentação.",
+      );
+    }
+  };
+
   const startEditing = () => {
     if (!tailoredResume) return;
     setIsEditingResume(true);
@@ -382,6 +526,19 @@ export default function ApplicationDetailPage({
   }
 
   const analysis = application.jobAnalysis;
+  const coverLetterDraftKey = getCoverLetterDraftKey(
+    coverLetterLanguage,
+    coverLetterFocus,
+  );
+  const coverLetterDraft =
+    coverLetterDrafts[coverLetterDraftKey] ??
+    createCoverLetter(
+      application,
+      profile,
+      tailoredResume,
+      coverLetterLanguage,
+      coverLetterFocus,
+    );
 
   return (
     <div className={styles.container}>
@@ -493,6 +650,18 @@ export default function ApplicationDetailPage({
           <Mail size={16} />
           <span>E-mail</span>
         </button>
+
+        <button
+          type="button"
+          ref={(element) => {
+            tabRefs.current["cover-letter"] = element;
+          }}
+          className={`${styles.tabButton} ${activeTab === "cover-letter" ? styles.active : ""}`}
+          onClick={() => setActiveTab("cover-letter")}
+        >
+          <FileSignature size={16} />
+          <span>Cover Letter</span>
+        </button>
       </div>
 
       {activeTab === "job" && (
@@ -529,6 +698,24 @@ export default function ApplicationDetailPage({
           application={application}
           profile={profile}
           tailoredResume={tailoredResume}
+        />
+      )}
+
+      {activeTab === "cover-letter" && (
+        <ApplicationCoverLetterTab
+          application={application}
+          tailoredResume={tailoredResume}
+          focus={coverLetterFocus}
+          generation={coverLetterGeneration}
+          body={coverLetterDraft}
+          onBodyChange={(body) =>
+            setCoverLetterDrafts((current) => ({
+              ...current,
+              [coverLetterDraftKey]: body,
+            }))
+          }
+          onFocusChange={setCoverLetterFocus}
+          onGenerateWithAi={handleGenerateCoverLetter}
         />
       )}
 

@@ -1,5 +1,7 @@
 import {
   AIProvider,
+  CoverLetterInput,
+  CoverLetterOutput,
   JobAnalysisInput,
   TailorResumeInput,
 } from "@tailored-cv/types";
@@ -112,6 +114,8 @@ export {
 };
 export type {
   AIProvider,
+  CoverLetterInput,
+  CoverLetterOutput,
   JobAnalysisInput,
   TailorResumeInput,
   JobAnalysisOutput,

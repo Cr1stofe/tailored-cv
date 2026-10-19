@@ -1,0 +1,5 @@
+-- RenameIndex
+ALTER INDEX "cover_letter_generations_application_id_target_language_focus_c" RENAME TO "cover_letter_generations_application_id_target_language_foc_idx";
+
+-- RenameIndex
+ALTER INDEX "tailoring_generations_application_id_target_language_created_at" RENAME TO "tailoring_generations_application_id_target_language_create_idx";

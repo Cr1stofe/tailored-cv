@@ -8,6 +8,7 @@ import {
   JobApplicationFiltersDto,
   TailoringGenerationDto,
   AnalysisGenerationDto,
+  CoverLetterGenerationDto,
 } from "@tailored-cv/types";
 import { CreateJobApplicationInput } from "@tailored-cv/validation";
 
@@ -129,6 +130,30 @@ export const api = {
     ),
   getTailoredResume: (id: string) =>
     request<TailoredResumeDto>(`/job-applications/${id}/tailored-resume`),
+  enqueueCoverLetter: (
+    id: string,
+    data: {
+      targetLanguage?: SupportedLanguage;
+      focus: "frontend" | "fullstack";
+    },
+  ) =>
+    request<CoverLetterGenerationDto>(`/job-applications/${id}/cover-letter`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getCoverLetterStatus: (
+    id: string,
+    data: {
+      targetLanguage?: SupportedLanguage;
+      focus: "frontend" | "fullstack";
+    },
+  ) => {
+    const query = new URLSearchParams({ focus: data.focus });
+    if (data.targetLanguage) query.set("targetLanguage", data.targetLanguage);
+    return request<CoverLetterGenerationDto>(
+      `/job-applications/${id}/cover-letter/status?${query.toString()}`,
+    );
+  },
   updateTailoredResume: (
     id: string,
     data: Partial<TailoredResumeDto> & { resumeId?: string },

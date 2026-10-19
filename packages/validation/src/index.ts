@@ -114,6 +114,35 @@ export const tailorResumeRequestSchema = z.object({
   targetLanguage: supportedLanguageSchema.optional(),
 });
 
+export const coverLetterRequestSchema = z.object({
+  targetLanguage: supportedLanguageSchema.optional(),
+  focus: z.enum(["frontend", "fullstack"]).default("frontend"),
+});
+
+export const coverLetterStatusQuerySchema = coverLetterRequestSchema;
+
+export const coverLetterAiResponseSchema = z
+  .object({
+    evidenceParagraphs: z
+      .array(
+        z
+          .object({
+            content: z.string().trim().min(1),
+            evidenceIds: z
+              .array(z.string().trim().min(1))
+              .min(1)
+              .max(4)
+              .refine((ids) => new Set(ids).size === ids.length, {
+                message: "evidenceIds must not contain duplicates",
+              }),
+          })
+          .strict(),
+      )
+      .min(2)
+      .max(3),
+  })
+  .strict();
+
 export const updateJobApplicationStatusSchema = z.object({
   status: applicationStatusSchema,
 });
