@@ -1,6 +1,6 @@
 # Tailored CV — Backend API (`@tailored-cv/api`)
 
-A modular, enterprise-grade RESTful API built with **NestJS 11**, **TypeScript**, and **Prisma ORM 7** (with native PostgreSQL adapter). Powers the core authentication, resume tailoring logic, and Gemini AI integrations.
+A modular RESTful API built with **NestJS 11**, **TypeScript**, and **Prisma ORM 7** (with the native PostgreSQL adapter). It powers authentication, job analysis, resume and cover-letter generation, and the Gemini AI integration.
 
 ---
 
@@ -12,7 +12,7 @@ The API follows NestJS standard modular design patterns with separation of conce
 | :------------------ | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
 | **Auth**            | `src/auth/`            | Session management, password hashing via Scrypt + Pepper, and secure `HttpOnly` cookie distribution                              |
 | **Profile**         | `src/profile/`         | Master Profile CRUD, automatic initialization, atomic transactions, and custom data-loader utility                               |
-| **Job Application** | `src/job-application/` | Job description intake, keyword extraction, match score calculation, and CV restructuring                                        |
+| **Job Application** | `src/job-application/` | Job description intake, keyword extraction, match score calculation, asynchronous AI generation, and CV restructuring            |
 | **AI**              | `src/ai/`              | Provider abstraction layer (`AIProvider`) with Gemini integration (`GeminiProvider`) and deterministic fallback (`MockProvider`) |
 | **Health**          | `src/health/`          | Health check endpoint with PostgreSQL connection readiness probe                                                                 |
 | **Prisma**          | `src/prisma/`          | Singleton `PrismaService` configured with `@prisma/adapter-pg` driver adapter and connection pooling                             |
@@ -46,12 +46,21 @@ The API follows NestJS standard modular design patterns with separation of conce
 - `POST /job-applications/:id/tailor` — Queue tailored resume generation and return `202 Accepted`
 - `GET /job-applications/:id/tailor/status` — Read tailored resume progress by language
 - `GET /job-applications/:id/tailored-resume` — Fetch the generated tailored resume
+- `POST /job-applications/:id/cover-letter` — Queue AI cover-letter generation and return `202 Accepted`
+- `GET /job-applications/:id/cover-letter/status` — Read cover-letter progress by language and focus
 
 AI operations are processed asynchronously by a database-backed worker. The
 creation endpoints do not wait for Gemini to finish; clients should poll the
 corresponding status endpoint and then fetch the resulting resource after a
 `COMPLETED` status. A `FAILED` status exposes the last error message without
 discarding the application.
+
+The queue is persisted in PostgreSQL and processed by an in-process worker that
+polls for available jobs. Each generation records its attempt count, start and
+completion timestamps, and the last error. A failed job is retried once after a
+short delay; after the retry limit it becomes `FAILED`. Jobs left in
+`PROCESSING` are returned to the queue when the API starts again, so a service
+restart does not leave them permanently stuck.
 
 ### Diagnostics
 

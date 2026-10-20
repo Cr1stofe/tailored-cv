@@ -1,6 +1,6 @@
 # Tailored CV — Web Frontend (`@tailored-cv/web`)
 
-Modern web interface built with **Next.js 16** (App Router & Turbopack), **React 19**, and strict TypeScript. Incorporates a **Dark Luxury** design system and an integrated **BFF (Backend For Frontend)** reverse proxy.
+Web interface built with **Next.js 16** (App Router & Turbopack), **React 19**, and strict TypeScript. It provides the dashboard, job application workflow, profile management, and an integrated **BFF (Backend For Frontend)** reverse proxy.
 
 ---
 
@@ -43,7 +43,7 @@ This pattern ensures:
 ## 🎨 UI/UX & Design System
 
 - **Styling:** Modular SCSS (`*.module.scss`) backed by central design variables and mixins (`styles/variables.scss`, `styles/mixins.scss`).
-- **Aesthetic:** Dark Luxury palette with subtle borders, glassmorphic surfaces, and responsive micro-animations.
+- **Visual system:** Shared SCSS variables and mixins, responsive layouts, clear application states, and lightweight interaction feedback.
 - **Forms & Validation:** `react-hook-form` powered by strict Zod schemas via `@hookform/resolvers/zod`.
 - **State Management:** Decoupled atomic stores utilizing `zustand`.
 - **Feedback & Icons:** `sonner` for non-intrusive toast notifications and `lucide-react` for iconography.

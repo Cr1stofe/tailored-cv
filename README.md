@@ -2,7 +2,7 @@
 
 > **Never invent. Only reframe.**
 
-A high-performance full-stack web application designed for precise, ATS-friendly resume tailoring using the Google Gemini API, strict schema validation, and zero hallucinations.
+A full-stack application for analyzing job opportunities and generating ATS-friendly, evidence-based resumes and cover letters with the Google Gemini API.
 
 The core principle guarantees that experience, technologies, metrics, job titles, companies, and qualifications are **never invented** — only restructured, prioritized, and aligned with the target job keywords and requirements.
 
@@ -12,10 +12,11 @@ The core principle guarantees that experience, technologies, metrics, job titles
 
 - **Monorepo:** [Turborepo](https://turbo.build/) + [pnpm](https://pnpm.io/) workspaces
 - **Runtime:** Node.js 24 LTS (`v24.21.0`)
-- **Frontend (`apps/web`):** Next.js 16 (App Router / React 19), SCSS Modules (Dark Luxury aesthetic), TypeScript strict, Lucide React, Sonner (toasts), React Hook Form + Zod, Zustand, BFF reverse proxy
+- **Frontend (`apps/web`):** Next.js 16 (App Router / React 19), SCSS Modules, strict TypeScript, Lucide React, Sonner (toasts), React Hook Form + Zod, Zustand, BFF reverse proxy
 - **Backend (`apps/api`):** NestJS 11 (Modular architecture, DTOs, Pipes, Exception Filters, Guards, Interceptors), TypeScript strict
 - **Database & ORM:** PostgreSQL 17 + Prisma ORM 7 (Native `@prisma/adapter-pg` driver adapter with `pg.Pool`)
-- **AI & Provider Abstraction:** `@google/genai` (Gemini API with provider abstraction and deterministic fallbacks)
+- **AI & Provider Abstraction:** `@google/genai` (Gemini API with provider abstraction and deterministic mock fallback)
+- **Asynchronous AI processing:** PostgreSQL-backed queue with status tracking, retry, stale-job recovery, and structured logs and metrics
 - **Validation & Typing:** Zod (`packages/validation`), Strict TypeScript without `any` (`packages/types`)
 - **Containerization:** Multi-stage Docker + Docker Compose (optimized for Linux VPS / Oracle Cloud / ARM & x86)
 
@@ -191,7 +192,7 @@ Em produção, replique os arquivos para armazenamento externo. O backup só é 
 
 ## 📦 Applications & Packages
 
-- **[`apps/web`](apps/web/README.md)** — Next.js 16 frontend application (App Router, React 19, Dark Luxury design system, and BFF reverse proxy).
+- **[`apps/web`](apps/web/README.md)** — Next.js 16 frontend application (App Router, React 19, SCSS modules, and BFF reverse proxy).
 - **[`apps/api`](apps/api/README.md)** — NestJS 11 backend service (Prisma 7, Scrypt + Pepper authentication, Gemini AI provider, and REST endpoints).
 - **`packages/validation`** — Shared Zod schemas ensuring end-to-end type safety and anti-hallucination contracts.
 - **`packages/types`** — Shared TypeScript models and interfaces.
@@ -230,3 +231,15 @@ Tailored CV strictly enforces data integrity when interacting with LLMs:
 2. **Permitted Transformations:** Chronological and thematic restructuring, highlighting relevant accomplishments, aligning terminology with job descriptions, and refining summaries based on existing facts.
 3. **Strictly Forbidden:** Inventing technologies or programming languages, synthesizing arbitrary metrics, inflating job titles or seniority levels, and fabricating non-existent employers.
 4. **Schema Enforcement:** Every AI response is structured and validated against shared Zod schemas (`packages/validation`) before reaching storage or the client.
+
+## 🔄 Asynchronous AI generation
+
+AI analysis and resume tailoring are processed asynchronously. The API creates a
+generation record and returns `202 Accepted`; an in-process worker polls the
+PostgreSQL-backed queue and updates the generation through `QUEUED`,
+`PROCESSING`, `COMPLETED`, or `FAILED`.
+
+The current flow retries a failed generation once after a short delay, stores
+the last error, and requeues jobs that were left in `PROCESSING` after a service
+restart. This keeps the deployment simple while preserving observable progress
+for the frontend.
