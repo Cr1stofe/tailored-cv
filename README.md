@@ -11,7 +11,7 @@ The core principle guarantees that experience, technologies, metrics, job titles
 ## 🏛️ Architecture & Tech Stack
 
 - **Monorepo:** [Turborepo](https://turbo.build/) + [pnpm](https://pnpm.io/) workspaces
-- **Runtime:** Node.js 24 LTS (`v24.21.0`)
+- **Runtime:** Node.js 24 LTS (`v24.22.1`)
 - **Frontend (`apps/web`):** Next.js 16 (App Router / React 19), SCSS Modules, strict TypeScript, Lucide React, Sonner (toasts), React Hook Form + Zod, Zustand, BFF reverse proxy
 - **Backend (`apps/api`):** NestJS 11 (Modular architecture, DTOs, Pipes, Exception Filters, Guards, Interceptors), TypeScript strict
 - **Database & ORM:** PostgreSQL 17 + Prisma ORM 7 (Native `@prisma/adapter-pg` driver adapter with `pg.Pool`)
